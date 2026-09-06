@@ -1,0 +1,9 @@
+{
+  "name": "server",
+  "private": true,
+  "scripts": {
+    "dev": "go run .",
+    "build": "go build -o bin/server .",
+    "sqlc": "go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0 generate"
+  }
+}

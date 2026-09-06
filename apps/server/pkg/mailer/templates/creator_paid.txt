@@ -1,0 +1,9 @@
+Subject: New Penpal {{KIND}}
+
+Someone just sent you a Penpal {{KIND}}. Open your inbox to read it and write back.
+
+{{INBOX}}
+
+Powered by Hotly
+
+https://hotly.com

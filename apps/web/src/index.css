@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+
+/*
+ * Hotly visual language for Penpal and Dome.
+ * Tokens follow hotly_frontend-main (The Letter / Penpal amber).
+ */
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-spectral), ui-serif, Georgia, serif;
+
+  --color-canvas: #faf8f5;
+  --color-panel: #faf6f0;
+  --color-phone: #f7f2ea;
+  --color-ink-dark: #2a2318;
+  --color-ink: #5a4d3a;
+  --color-ink-light: #8a7e6e;
+  --color-ink-faint: #b8ad9a;
+  --color-amber: #b8864a;
+  --color-amber-dark: #825a28;
+  --color-amber-light: #d4a574;
+  --color-amber-faint: #e8d5bc;
+  --color-sage: #6b8f6b;
+  --color-rose: #a85a5a;
+  --color-rule: #d4c8b0;
+
+  --color-background: var(--color-canvas);
+  --color-foreground: var(--color-ink-dark);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-ink-dark);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-ink-dark);
+  --color-primary: #f59e0b;
+  --color-primary-foreground: #1a1a1a;
+  --color-secondary: #f5efe5;
+  --color-secondary-foreground: var(--color-ink-dark);
+  --color-muted: #f5efe5;
+  --color-muted-foreground: var(--color-ink-light);
+  --color-accent: #fef3c7;
+  --color-accent-foreground: var(--color-amber-dark);
+  --color-destructive: var(--color-rose);
+  --color-border: var(--color-rule);
+  --color-input: var(--color-rule);
+  --color-ring: #fbbf24;
+
+  --radius: 1rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink-dark antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring/60 ring-offset-2 ring-offset-canvas;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

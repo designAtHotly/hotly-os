@@ -1,0 +1,16 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "sqlc/queries"
+    schema:
+      - "../../db/migrations/000001_stage1_foundation.up.sql"
+      - "../../db/migrations/000002_penpal_subscriptions.up.sql"
+      - "../../db/migrations/000003_media_attachments.up.sql"
+      - "../../db/migrations/000004_dome.up.sql"
+    gen:
+      go:
+        package: "db"
+        out: "pkg/db"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_result_struct_pointers: true

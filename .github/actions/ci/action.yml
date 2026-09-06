@@ -1,0 +1,49 @@
+name: Product CI
+description: Go tests, web typecheck, and Compose file validity. Does not build images.
+
+inputs:
+  product-root:
+    description: Path to the product tree (`.` after extract; `hotly-opensource` in the references repo).
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ inputs.product-root }}/apps/server/go.mod
+        cache-dependency-path: ${{ inputs.product-root }}/apps/server/go.sum
+
+    - name: Set up Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: "1.4.0"
+
+    - name: Install JS dependencies
+      working-directory: ${{ inputs.product-root }}
+      shell: bash
+      run: bun install --frozen-lockfile
+
+    - name: Go tests
+      working-directory: ${{ inputs.product-root }}/apps/server
+      shell: bash
+      run: go test ./...
+
+    - name: Typecheck web
+      working-directory: ${{ inputs.product-root }}
+      shell: bash
+      run: bun run check-types
+
+    - name: Installer syntax
+      working-directory: ${{ inputs.product-root }}
+      shell: bash
+      run: bash -n scripts/install.sh
+
+    - name: Compose config
+      working-directory: ${{ inputs.product-root }}
+      shell: bash
+      run: |
+        cp .env.example .env
+        docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet

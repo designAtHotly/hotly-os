@@ -1,0 +1,11 @@
+Subject: Reopen your Penpal chat
+
+You asked for a way back into your Penpal conversation. Open chat on this instance:
+
+{{LINK}}
+
+The link works once and expires in 24 hours. If you did not request this, you can ignore the email.
+
+Powered by Hotly
+
+https://hotly.com

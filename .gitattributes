@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.woff2 binary
+
+go.sum linguist-generated=true
+bun.lock linguist-generated=true

@@ -1,0 +1,54 @@
+name: Bug report
+description: Something is broken in this software (not your Stripe/Firebase/SendGrid account).
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do **not** paste `.env`, API keys, service-account JSON, or guest emails.
+        If this is a secret leak or an exploit, use SECURITY.md instead.
+        Paste the installer block titled "System (paste this in a GitHub issue)" when you have it.
+  - type: input
+    id: tag
+    attributes:
+      label: Release or commit
+      placeholder: v0.1.0 or abc1234
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Where it runs
+      placeholder: OrbStack on macOS arm64 / Ubuntu 24.04 amd64 VPS
+    validations:
+      required: true
+  - type: textarea
+    id: system
+    attributes:
+      label: System block
+      description: Paste the installer output between "--- System (paste this in a GitHub issue) ---" and "--- end system ---". A screenshot of that section is also fine. Do not paste .env.
+      placeholder: |
+        --- System (paste this in a GitHub issue) ---
+        uname: ...
+        --- end system ---
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: Exact Compose command, URL, and clicks. No secrets.
+    validations:
+      required: true

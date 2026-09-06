@@ -1,0 +1,14 @@
+# VPS overlay: only Caddy is published. Postgres, web, and the API
+# stay on the Compose network. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+# Local OrbStack keeps docker-compose.yml alone so :3000/:8080/:5432 still work.
+# `ports: []` does not unpublish — Compose merges port lists — so this uses !reset.
+
+services:
+  postgres:
+    ports: !reset []
+  server:
+    ports: !reset []
+  web:
+    ports: !reset []

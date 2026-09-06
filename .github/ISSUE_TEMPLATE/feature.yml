@@ -1,0 +1,20 @@
+name: Feature request
+description: A change that still fits the single-creator MVP.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Out of scope without a product decision: multi-creator, Stripe Connect, extra mail vendors, prebuilt images, polling/WebSockets, analytics.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is hard today
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you want instead
+    validations:
+      required: true

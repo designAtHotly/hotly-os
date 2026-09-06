@@ -1,0 +1,145 @@
+name: hotly-opensource
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      PGTZ: ${TZ:-UTC}
+      POSTGRES_USER: ${POSTGRES_USER:-hotly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-hotly}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate:v4.18.3
+    restart: "no"
+    environment:
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./db/migrations:/migrations:ro
+    command:
+      - -path=/migrations
+      - -database
+      - postgres://${POSTGRES_USER:-hotly}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-hotly}?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  server:
+    build:
+      context: ./apps/server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-UTC}
+      PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-hotly}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-hotly}?sslmode=disable
+      MEDIA_PATH: /var/lib/hotly/media
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://garage:3900}
+      S3_REGION: ${S3_REGION:-garage}
+      S3_BUCKET: ${S3_BUCKET:-hotly}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    volumes:
+      - media_data:/var/lib/hotly/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      garage:
+        condition: service_healthy
+
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: unless-stopped
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    environment:
+      TZ: ${TZ:-UTC}
+      GARAGE_CONFIG: /etc/garage.toml
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY}
+      GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_KEY}
+      GARAGE_DEFAULT_BUCKET: ${S3_BUCKET:-hotly}
+    volumes:
+      - ./deploy/garage/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    expose:
+      - "3900"
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost/api}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost}
+      SERVER_ORIGIN: http://server:8080
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      server:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      CADDY_SITE: ${CADDY_SITE:-http://:80}
+    ports:
+      - "${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      server:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      # Hit the API directly. After CADDY_SITE is a hostname, :80 is only an
+      # HTTP→HTTPS redirect, so wget to 127.0.0.1:80 follows to https://127.0.0.1
+      # and fails TLS.
+      test: ["CMD", "wget", "-qO-", "http://server:8080/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  media_data:
+  garage_meta:
+  garage_data:
+  caddy_data:
+  caddy_config:

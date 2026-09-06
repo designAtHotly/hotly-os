@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS chat_recovery_tokens;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS conversations;
+DROP TABLE IF EXISTS stripe_events;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS checkouts;
+DROP TABLE IF EXISTS creators;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;

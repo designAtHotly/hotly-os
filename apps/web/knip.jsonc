@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Run from the monorepo root so Bun `catalog:` in the root package.json resolves.
+  // bun run knip:web  (from hotly-opensource/)
+  "ignore": ["Dockerfile", "AGENTS.md", "README.md"],
+  "ignoreFiles": ["public/**"],
+  // Exports used only inside the same file are not dead code.
+  "ignoreExportsUsedInFile": true
+}

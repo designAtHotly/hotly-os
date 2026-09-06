@@ -1,0 +1,9 @@
+Subject: You have a new Penpal reply
+
+There is a new reply in your Penpal conversation. Open chat on this instance to read it.
+
+{{CHAT}}
+
+Powered by Hotly
+
+https://hotly.com
