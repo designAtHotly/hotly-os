@@ -2,7 +2,7 @@
 
 Self-hosted Hotly for exactly one creator. Operators build images from source. The project does not publish prebuilt images, register DNS, or provision certificates.
 
-This file is the runbook for this repository. Operators pin GitHub Release tag `v0.1.2`, not a drifting `main`.
+This file is the runbook for this repository. Operators pin GitHub Release tag `v0.1.3`, not a drifting `main`.
 
 ## What you supply
 
@@ -35,17 +35,19 @@ amd64 Linux is the documented VPS architecture. The same Compose file also runs 
 
 ## Put this tree on a host
 
-Install from **GitHub Release tag `v0.1.2`**, not rsync from another folder and not a drifting `main`. Do not copy `.env`, `.secrets/`, or `.backup/` onto the host.
+Install from **GitHub Release tag `v0.1.3`**, not rsync from another folder and not a drifting `main`. Do not copy `.env`, `.secrets/`, or `.backup/` onto the host.
+
+A curl install unpacks to **`~/hotly-os`** by default (prompt, or `--dir` / `HOTLY_ROOT`). `.env` is `$HOME/hotly-os/.env`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.2/scripts/install.sh | bash -s -- --tag v0.1.2 --github designAtHotly/hotly-os
+curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.3/scripts/install.sh | bash -s -- --tag v0.1.3 --github designAtHotly/hotly-os
 ```
 
-Or:
+Or clone that tag and run locally:
 
 ```bash
-git clone --branch v0.1.2 https://github.com/designAtHotly/hotly-os.git
-cd hotly-os
+git clone --branch v0.1.3 https://github.com/designAtHotly/hotly-os.git ~/hotly-os
+cd ~/hotly-os
 ./scripts/install.sh --local
 ```
 
@@ -57,7 +59,7 @@ Do **not** treat a raw public IP as the production origin. Firebase authorized d
 
 1. Pick a hostname. Point A/AAAA at the VPS (**DNS only** / grey cloud on Cloudflare until Let’s Encrypt succeeds).
 2. Open TCP 80 and 443. Size the box at least **2 vCPU / 4 GB** if you build images on the host.
-3. Clone or curl this tree at tag `v0.1.2` (no `.env` / `.secrets` / `.backup`). Put `PUBLIC_APP_URL=https://your.domain.example` and `CADDY_SITE=your.domain.example` in `.env`.
+3. Clone or curl this tree at tag `v0.1.3` (no `.env` / `.secrets` / `.backup`). Put `PUBLIC_APP_URL=https://your.domain.example` and `CADDY_SITE=your.domain.example` in `.env`.
 4. `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml` (plus override if you use one). `docker compose up --build -d`. Confirm `GET https://your.domain.example/api/health`.
 5. Then providers: Firebase authorized domain = that hostname; Stripe webhook `https://your.domain.example/api/webhooks/stripe`; SendGrid `SG.` key + verified sender. Env names: [Stripe, Firebase, SendGrid](#stripe-firebase-sendgrid).
 
@@ -144,7 +146,7 @@ It does not replay Stripe events or SendGrid mail. Checkout sessions that comple
 
 ## Upgrade
 
-Check out a **GitHub Release tag** (`v0.1.2`, not a drifting `main`) and rebuild. There are no published images to pull. Tags are cut manually; the `release` workflow creates the GitHub Release after CI on that tag passes.
+Check out a **GitHub Release tag** (`v0.1.3`, not a drifting `main`) and rebuild. There are no published images to pull. Tags are cut manually; the `release` workflow creates the GitHub Release after CI on that tag passes.
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d

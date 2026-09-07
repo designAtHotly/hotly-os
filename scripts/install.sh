@@ -18,6 +18,7 @@ SKIP_SPEC=false
 ASSUME_YES=false
 TAG="${HOTLY_TAG:-}"
 GITHUB_REPO="${HOTLY_GITHUB:-designAtHotly/hotly-os}"
+INSTALL_DIR="${HOTLY_ROOT:-}"
 
 usage() {
   cat <<'EOF'
@@ -41,13 +42,16 @@ Options:
   --skip-up            Write files only; do not run docker compose
   --skip-spec          Do not exit when Docker has fewer than 2 CPUs or 4 GB RAM
   --yes                No prompts; keep existing .env; skip empty providers
-  --tag <v0.1.2>       Release tag to unpack when downloading (or HOTLY_TAG)
+  --tag <v0.1.3>       Release tag to unpack when downloading (or HOTLY_TAG)
   --github <org/repo>  GitHub repo for the tarball (or HOTLY_GITHUB)
+  --dir <path>         Where a curl install unpacks (or HOTLY_ROOT). Default ~/hotly-os.
+                       .env lives at <path>/.env. Not used with --local.
 
 Re-run to change keys. Never uses docker compose down -v.
 
 From a checkout: ./scripts/install.sh --local
-From a VPS: curl the v0.1.2 script and pass --tag v0.1.2 --github designAtHotly/hotly-os (or HOTLY_GITHUB).
+From a VPS: curl the install script and pass --tag v0.1.3 --github designAtHotly/hotly-os.
+The tree lands in ~/hotly-os (prompt, or --dir / HOTLY_ROOT), not /tmp.
 EOF
 }
 
@@ -93,13 +97,18 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --tag | ----tag)
-      [[ -n "${2:-}" ]] || fail "--tag needs a value (e.g. v0.1.2)"
+      [[ -n "${2:-}" ]] || fail "--tag needs a value (e.g. v0.1.3)"
       TAG="$2"
       shift 2
       ;;
     --github)
       [[ -n "${2:-}" ]] || fail "--github needs org/repo"
       GITHUB_REPO="$2"
+      shift 2
+      ;;
+    --dir)
+      [[ -n "${2:-}" ]] || fail "--dir needs a path (e.g. /opt/hotly-os or ~/hotly-os)"
+      INSTALL_DIR="$2"
       shift 2
       ;;
     *)
@@ -166,7 +175,7 @@ From a checkout of this tree:
 
 From a VPS, pin the tag:
 
-  curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.2/scripts/install.sh | bash -s -- --tag v0.1.2 --github designAtHotly/hotly-os
+  curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.3/scripts/install.sh | bash -s -- --tag v0.1.3 --github designAtHotly/hotly-os
 
 EOF
   exit 1
@@ -705,32 +714,65 @@ finish() {
   echo -e "${MUTED}Backups are on you.${NC} Postgres and media live in Docker volumes on this machine."
   echo "Nothing is replicated. See docs/operations.md (backup/restore)."
   echo ""
-  echo "Re-run this installer to rotate a key or fill a skipped provider:"
-  echo "  ./scripts/install.sh --local"
+  echo "This install:  $ROOT"
+  echo ".env:          $ROOT/.env"
+  echo "Re-run to rotate a key or fill a skipped provider:"
+  echo "  cd \"$ROOT\" && ./scripts/install.sh --local"
   echo "Never: docker compose down -v  (that deletes guest data)."
   echo ""
+}
+
+choose_install_dir() {
+  local default reply
+  default="${INSTALL_DIR:-${HOTLY_ROOT:-$HOME/hotly-os}}"
+  if [[ -z "${INSTALL_DIR:-}" ]]; then
+    if [[ "$ASSUME_YES" == true ]]; then
+      INSTALL_DIR="$default"
+    else
+      printf '  default: %s\n' "$default" >&2
+      info "Curl installs unpack here (not /tmp). .env will be ${default}/.env"
+      read -r -p "Install directory: " reply </dev/tty || true
+      if [[ -n "$reply" ]]; then
+        INSTALL_DIR="$reply"
+      else
+        INSTALL_DIR="$default"
+      fi
+    fi
+  fi
+  INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
+  mkdir -p "$INSTALL_DIR" || fail "Cannot create $INSTALL_DIR"
+  INSTALL_DIR="$(cd "$INSTALL_DIR" && pwd)"
 }
 
 fetch_release() {
   command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1 || educate_curl_tar
   [[ -n "$GITHUB_REPO" ]] || educate_no_release
-  [[ -n "$TAG" && "$TAG" != latest ]] || fail "Set --tag v0.1.2 (or HOTLY_TAG). Do not pin latest — that is a drifting install."
-  local url dest dir pass=()
-  url="https://github.com/${GITHUB_REPO}/archive/refs/tags/${TAG}.tar.gz"
-  dest="$(mktemp -d)"
-  info "Downloading ${url}"
-  curl -fsSL "$url" -o "$dest/src.tar.gz" || fail "Could not download ${url}
+  [[ -n "$TAG" && "$TAG" != latest ]] || fail "Set --tag v0.1.3 (or HOTLY_TAG). Do not pin latest — that is a drifting install."
+  local url tmp dir pass=()
+  choose_install_dir
+  if [[ -f "$INSTALL_DIR/docker-compose.yml" && -f "$INSTALL_DIR/scripts/install.sh" ]]; then
+    info "Using existing tree at $INSTALL_DIR"
+  else
+    url="https://github.com/${GITHUB_REPO}/archive/refs/tags/${TAG}.tar.gz"
+    tmp="$(mktemp -d)"
+    info "Downloading ${url}"
+    curl -fsSL "$url" -o "$tmp/src.tar.gz" || fail "Could not download ${url}
 Create a GitHub Release tag first, or use --local from a checkout."
-  tar -xzf "$dest/src.tar.gz" -C "$dest"
-  dir="$(find "$dest" -maxdepth 1 -type d ! -path "$dest" | head -1)"
-  [[ -f "$dir/scripts/install.sh" ]] || fail "Archive did not contain scripts/install.sh"
+    tar -xzf "$tmp/src.tar.gz" -C "$tmp"
+    dir="$(find "$tmp" -maxdepth 1 -type d ! -path "$tmp" | head -1)"
+    [[ -f "$dir/scripts/install.sh" ]] || fail "Archive did not contain scripts/install.sh"
+    info "Unpacking to $INSTALL_DIR"
+    cp -a "$dir"/. "$INSTALL_DIR"/
+    rm -rf "$tmp"
+  fi
+  [[ -f "$INSTALL_DIR/scripts/install.sh" ]] || fail "No scripts/install.sh in $INSTALL_DIR"
   [[ "$SKIP_FIREBASE" == true ]] && pass+=(--skip-firebase)
   [[ "$SKIP_STRIPE" == true ]] && pass+=(--skip-stripe)
   [[ "$SKIP_SENDGRID" == true ]] && pass+=(--skip-sendgrid)
   [[ "$SKIP_UP" == true ]] && pass+=(--skip-up)
   [[ "$SKIP_SPEC" == true ]] && pass+=(--skip-spec)
   [[ "$ASSUME_YES" == true ]] && pass+=(--yes)
-  HOTLY_INSTALL_INNER=1 exec bash "$dir/scripts/install.sh" --local "${pass[@]}" </dev/tty
+  HOTLY_INSTALL_INNER=1 exec bash "$INSTALL_DIR/scripts/install.sh" --local "${pass[@]}" </dev/tty
 }
 
 # --- start ---

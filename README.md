@@ -104,13 +104,13 @@ bun run dev
 
 Bring **DNS up before** the first public Compose. A raw droplet IP is a smoke host, not the origin guests, Google, Stripe, or recovery mail should use.
 
-Pin a **Release tag** (`v0.1.2`), not a drifting `main`:
+Pin a **Release tag** (`v0.1.3`), not a drifting `main`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.2/scripts/install.sh | bash -s -- --tag v0.1.2 --github designAtHotly/hotly-os
+curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.3/scripts/install.sh | bash -s -- --tag v0.1.3 --github designAtHotly/hotly-os
 ```
 
-From a checkout of that tag: `./scripts/install.sh --local`.
+That unpacks to **`~/hotly-os`** (or `--dir` / `HOTLY_ROOT`). `.env` is `~/hotly-os/.env`. From a checkout of that tag: `./scripts/install.sh --local`.
 
 1. Hostname + A/AAAA (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443.
 2. Set `PUBLIC_APP_URL=https://your.domain.example` and `CADDY_SITE=your.domain.example`. That origin is also canonical, Open Graph, `/robots.txt`, and `/sitemap.xml`.
