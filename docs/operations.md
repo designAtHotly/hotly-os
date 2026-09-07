@@ -9,7 +9,7 @@ This file is the runbook for this repository. Operators pin GitHub Release tag `
 - A Linux VPS (or local Linux/macOS Docker). **Docker Engine and Compose v2** both. Windows is not supported. See the product README Prerequisites.
 - A public URL (`PUBLIC_APP_URL`) that browsers will use. The same value is the canonical origin for Open Graph, `/robots.txt`, and `/sitemap.xml` (web container, runtime — not baked at image build).
 - A singleton creator email (`CREATOR_EMAIL`) and display name (`CREATOR_DISPLAY_NAME`).
-- Operator-owned Firebase (Google sign-in), Stripe, and SendGrid accounts and the env vars in [Stripe, Firebase, SendGrid](#stripe-firebase-sendgrid).
+- Operator-owned Firebase (Google sign-in), Stripe, and SendGrid accounts. Paste those values at the [installer](#install-curl) prompts ([Stripe, Firebase, SendGrid](#stripe-firebase-sendgrid)).
 - `.env` is never committed. `scripts/install.sh` writes `SESSION_SECRET`, `RECOVERY_TOKEN_SECRET`, `GARAGE_RPC_SECRET`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` on the box. It does not rotate `POSTGRES_PASSWORD` (Compose default unless you change it).
 
 The application does not create a second creator, Connect/wallets, or a Hotly-owned provider account.
@@ -33,61 +33,40 @@ Image layers on that class of host are on the order of Postgres ~480 MB, web ~24
 
 amd64 Linux is the documented VPS architecture. The same Compose file also runs on Docker Desktop / OrbStack (including Apple Silicon). Resize down to 2 GB only if images are built elsewhere and you have measured a rebuild-free idle.
 
-## Put this tree on a host
+## Install (curl)
 
-Install from **GitHub Release tag `v0.1.4`**, not rsync from another folder and not a drifting `main`. Do not copy `.env`, `.secrets/`, or `.backup/` onto the host.
+Do **not** copy `.env`, `.secrets/`, or `.backup/` onto the host. Do **not** start by hand-editing `.env` or running `docker compose` yourself. The installer writes `.env` (origin, creator, provider keys, session and Garage/S3 secrets) and starts Compose. It does not install Docker, create DNS, or provision certificates.
 
-A curl install unpacks to **`~/hotly-os`** by default (prompt, or `--dir` / `HOTLY_ROOT`). `.env` is `$HOME/hotly-os/.env`.
+On the VPS first: Docker Engine and Compose v2, TCP 80 and 443 open, hostname pointing at this box (**DNS only** / grey cloud on Cloudflare until Let’s Encrypt succeeds). Size at least **2 vCPU / 4 GB** if you build images on the host. The application does not install Docker for you.
+
+Then:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.4/scripts/install.sh | bash -s -- --tag v0.1.4 --github designAtHotly/hotly-os
 ```
 
-Or clone that tag and run locally:
+That unpacks to **`~/hotly-os`** (prompt, or `--dir` / `HOTLY_ROOT`). `.env` is `$HOME/hotly-os/.env`. Answer the prompts: public URL (`https://your.domain.example`, not a raw IP), creator email/name, then Firebase / Stripe / SendGrid or skip. For a public hostname it adds `docker-compose.prod.yml` (only 80/443 published) and does not `down -v`. Confirm `GET https://your.domain.example/api/health`.
+
+Re-run to fill a skipped provider or rotate a key:
 
 ```bash
-git clone --branch v0.1.4 https://github.com/designAtHotly/hotly-os.git ~/hotly-os
 cd ~/hotly-os
 ./scripts/install.sh --local
 ```
 
-On the VPS, install Docker Engine and Compose first, open TCP 80 and 443, then run the installer. The application does not install Docker for you.
+From a git checkout of the same tag instead of curl: `./scripts/install.sh --local`.
 
-## Public VPS order
-
-Do **not** treat a raw public IP as the production origin. Firebase authorized domains, Stripe webhooks, recovery links, and Caddy certificates all want the hostname you will keep.
-
-1. Pick a hostname. Point A/AAAA at the VPS (**DNS only** / grey cloud on Cloudflare until Let’s Encrypt succeeds).
-2. Open TCP 80 and 443. Size the box at least **2 vCPU / 4 GB** if you build images on the host.
-3. Clone or curl this tree at tag `v0.1.4` (no `.env` / `.secrets` / `.backup`). Put `PUBLIC_APP_URL=https://your.domain.example` and `CADDY_SITE=your.domain.example` in `.env`.
-4. `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml` (plus override if you use one). `docker compose up --build -d`. Confirm `GET https://your.domain.example/api/health`.
-5. Then providers: Firebase authorized domain = that hostname; Stripe webhook `https://your.domain.example/api/webhooks/stripe`; SendGrid `SG.` key + verified sender. Env names: [Stripe, Firebase, SendGrid](#stripe-firebase-sendgrid).
+It refuses a missing Docker daemon (with install URLs) and Docker with fewer than 2 CPUs / ~4 GB RAM. `--skip-spec` is only for `.env`-only tests on a tiny box. Paste the "System (paste this in a GitHub issue)" block when reporting install failures.
 
 Local OrbStack may stay `http://localhost` and skip DNS.
 
-## Configure and start
+Do **not** treat a raw public IP as the production origin. Firebase authorized domains, Stripe webhooks, recovery links, and Caddy certificates all want the hostname you will keep.
 
-Preferred: [`scripts/install.sh`](../scripts/install.sh) (`./scripts/install.sh --local` on a checkout). It refuses a missing Docker daemon with install URLs, refuses Docker with fewer than 2 CPUs / ~4 GB RAM, writes `.env` (including session and Garage/S3 secrets), and runs Compose without `down -v`. Paste the "System (paste this in a GitHub issue)" block when reporting install failures.
-
-Or by hand from this directory:
-
-```bash
-cp .env.example .env
-# Set CREATOR_EMAIL and provider keys. Generate SESSION_SECRET, RECOVERY_TOKEN_SECRET,
-# GARAGE_RPC_SECRET, S3_ACCESS_KEY, and S3_SECRET_KEY if you are not using the installer.
-docker compose up --build
-```
-
-On a public VPS, add the prod overlay so Postgres, the API, and Next.js are not published. Put this in `.env` so `backup.sh` / `restore.sh` use the same files:
-
-```bash
-COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
-docker compose up --build -d
-```
-
-Only append `:docker-compose.override.yml` if that file exists (Firebase JSON mount). Compose fails if `COMPOSE_FILE` names a missing file. The installer adds the override only when it is present.
+After a public install, still do these in the provider consoles (the installer cannot): add the hostname under Firebase Authentication → authorized domains; register the Stripe webhook at `https://your.domain.example/api/webhooks/stripe` (events under [Stripe](#stripe-when-you-have-keys)) and paste the `whsec_` at the installer prompt (create the endpoint first, or skip Stripe and re-run `--local` after); SendGrid verified sender plus an `SG.` key.
 
 Compose starts PostgreSQL 18, runs `db/migrations` before the API, then the Go API, Next.js, Garage (private S3), and Caddy. Browsers should use Caddy (`PUBLIC_APP_URL`), not `:3000` or `:8080`.
+
+Hand-edit `.env` and `docker compose up` only if you are not using the installer. On a public VPS that fallback must include `docker-compose.prod.yml`. Only name `docker-compose.override.yml` in `COMPOSE_FILE` if that file exists (Firebase JSON mount). The installer writes the override when you paste the service-account JSON.
 
 Health:
 
@@ -107,10 +86,9 @@ docker compose up --force-recreate migrate
 The project does not claim automatic DNS or certificate provisioning.
 
 1. Point the domain’s A/AAAA records at the VPS.
-2. Open TCP 80 and 443. Start with `docker-compose.prod.yml` so Postgres, web, and the API are not published. Garage is already internal-only. If the zone is on Cloudflare, keep the record **DNS only** (grey cloud) until Caddy has a certificate; orange-cloud proxy hides the origin from Let's Encrypt.
-3. Set `PUBLIC_APP_URL=https://your.domain.example` (no trailing slash).
-4. Set `CADDY_SITE=your.domain.example` (hostname only). Official `caddy:2-alpine` will attempt ACME once DNS hits this machine. If that fails, terminate TLS in your own reverse proxy and keep same-origin `/` + `/api`.
-5. Register a Stripe webhook at `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Enable the Checkout, subscription, and invoice events listed under [Stripe](#stripe-when-you-have-keys). Do not reuse another Stripe CLI profile.
+2. Open TCP 80 and 443. If the zone is on Cloudflare, keep the record **DNS only** (grey cloud) until Caddy has a certificate; orange-cloud proxy hides the origin from Let's Encrypt.
+3. Run the [curl installer](#install-curl). It asks for the public URL (`https://your.domain.example`, no trailing slash) and sets `CADDY_SITE` to that hostname. Official `caddy:2-alpine` will attempt ACME once DNS hits this machine. If that fails, terminate TLS in your own reverse proxy and keep same-origin `/` + `/api`.
+4. Register a Stripe webhook at `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Enable the Checkout, subscription, and invoice events listed under [Stripe](#stripe-when-you-have-keys). Paste the Dashboard `whsec_` at the installer prompt. Do not reuse a `stripe listen` secret.
 
 Web and API must share that public origin. Cross-origin browser writes are rejected.
 
@@ -188,9 +166,9 @@ That is the local clean-machine check. A public host still needs a real `CADDY_S
 
 ## Stripe, Firebase, SendGrid
 
-Leave a provider empty to boot the stack. User-facing pages then report that the provider is not configured (503 from the API, copy on `/auth/firebase`, `/auth/chat-recovery`, and `/penpal`). Filling the env and recreating `server` enables that provider. Changing `CREATOR_EMAIL` revokes creator sessions and never creates a second creator.
+Leave a provider empty to boot the stack (answer `n` at the installer `[y/N]`). User-facing pages then report that the provider is not configured (503 from the API, copy on `/auth/firebase`, `/auth/chat-recovery`, and `/penpal`). Re-run `./scripts/install.sh --local` to fill keys. Changing `CREATOR_EMAIL` revokes creator sessions and never creates a second creator.
 
-Installer prompts that look like `[y/N]` need `y` or `n` first. Do not paste an API key at that question.
+Installer prompts that look like `[y/N]` need `y` or `n` first. Do not paste an API key at that question. Names below are what those prompts write into `.env`, not a separate edit step.
 
 ### Firebase (when you have a project)
 
@@ -252,7 +230,7 @@ SENDGRID_FROM_EMAIL=you@your-verified-domain.example
 SENDGRID_FROM_NAME=Your creator name
 ```
 
-`FROM_EMAIL` must be a SendGrid **verified single sender** ([Sender Authentication](https://app.sendgrid.com/settings/sender_auth)) or a mailbox on a domain-authenticated domain. A Twilio org `_twilio` TXT record is not sender auth. After saving `.env`:
+`FROM_EMAIL` must be a SendGrid **verified single sender** ([Sender Authentication](https://app.sendgrid.com/settings/sender_auth)) or a mailbox on a domain-authenticated domain. A Twilio org `_twilio` TXT record is not sender auth. After the installer writes the three values it recreates `server`. If you edited `.env` by hand:
 
 ```bash
 docker compose up -d --force-recreate server

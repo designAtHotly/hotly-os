@@ -104,23 +104,15 @@ bun run dev
 
 Bring **DNS up before** the first public Compose. A raw droplet IP is a smoke host, not the origin guests, Google, Stripe, or recovery mail should use.
 
-Pin a **Release tag** (`v0.1.4`), not a drifting `main`:
+Pin a **Release tag** (`v0.1.4`), not a drifting `main`. Hostname + A/AAAA first (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443. Docker Engine and Compose v2. Then curl — do not hand-edit `.env` or run Compose yourself:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.4/scripts/install.sh | bash -s -- --tag v0.1.4 --github designAtHotly/hotly-os
 ```
 
-That unpacks to **`~/hotly-os`** (or `--dir` / `HOTLY_ROOT`). `.env` is `~/hotly-os/.env`. From a checkout of that tag: `./scripts/install.sh --local`.
+That unpacks to **`~/hotly-os`**. Answer the prompts for `https://your.domain.example` (canonical origin, Open Graph, `/robots.txt`, `/sitemap.xml`). The installer writes `.env`, uses the prod overlay (Postgres / API / Next.js not published), and starts Compose. From a checkout of that tag: `./scripts/install.sh --local`.
 
-1. Hostname + A/AAAA (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443.
-2. Set `PUBLIC_APP_URL=https://your.domain.example` and `CADDY_SITE=your.domain.example`. That origin is also canonical, Open Graph, `/robots.txt`, and `/sitemap.xml`.
-3. Do not publish Postgres, the API, or Next.js:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
-```
-
-4. Then attach providers to that HTTPS origin: Firebase authorized domain, Stripe webhook `https://your.domain.example/api/webhooks/stripe` (Checkout, subscription, and invoice events in [`docs/operations.md`](docs/operations.md#stripe-when-you-have-keys)), SendGrid API key starting `SG.` plus a verified sender ([app.sendgrid.com](https://app.sendgrid.com/settings/api_keys)).
+After that, in the provider consoles: Firebase authorized domain, Stripe webhook `https://your.domain.example/api/webhooks/stripe` (Checkout, subscription, and invoice events in [`docs/operations.md`](docs/operations.md#stripe-when-you-have-keys); paste `whsec_` at the installer prompt), SendGrid API key starting `SG.` plus a verified sender ([app.sendgrid.com](https://app.sendgrid.com/settings/api_keys)).
 
 Full sequence, backup/restore, upgrades, SendGrid vs Twilio keys: [`docs/operations.md`](docs/operations.md).
 
