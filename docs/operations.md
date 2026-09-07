@@ -110,7 +110,7 @@ The project does not claim automatic DNS or certificate provisioning.
 2. Open TCP 80 and 443. Start with `docker-compose.prod.yml` so Postgres, web, and the API are not published. Garage is already internal-only. If the zone is on Cloudflare, keep the record **DNS only** (grey cloud) until Caddy has a certificate; orange-cloud proxy hides the origin from Let's Encrypt.
 3. Set `PUBLIC_APP_URL=https://your.domain.example` (no trailing slash).
 4. Set `CADDY_SITE=your.domain.example` (hostname only). Official `caddy:2-alpine` will attempt ACME once DNS hits this machine. If that fails, terminate TLS in your own reverse proxy and keep same-origin `/` + `/api`.
-5. Register a Stripe webhook at `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Do not reuse another Stripe CLI profile.
+5. Register a Stripe webhook at `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Enable the Checkout, subscription, and invoice events listed under [Stripe](#stripe-when-you-have-keys). Do not reuse another Stripe CLI profile.
 
 Web and API must share that public origin. Cross-origin browser writes are rejected.
 
@@ -226,7 +226,21 @@ STRIPE_PUBLISHABLE_KEY=   # pk_…
 STRIPE_WEBHOOK_SECRET=    # whsec_… from the Dashboard endpoint for this hostname
 ```
 
-Webhook URL: `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Do not reuse a `stripe listen` secret. Put each value in the matching installer prompt — do not swap `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`.
+Webhook URL: `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Dashboard → Developers → Webhooks → Add endpoint. Do not reuse a `stripe listen` secret. Put each value in the matching installer prompt — do not swap `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`.
+
+Enable **only** these events (the API ignores others):
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `checkout.session.expired`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.paid`
+- `invoice.payment_succeeded`
+
+Do not turn on “listen to all events.” One-time notes and paid unlocks need the Checkout session events; weekly Penpal needs the subscription and invoice events.
 
 ### SendGrid (when you have a key)
 

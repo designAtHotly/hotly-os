@@ -120,7 +120,7 @@ That unpacks to **`~/hotly-os`** (or `--dir` / `HOTLY_ROOT`). `.env` is `~/hotly
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 ```
 
-4. Then attach providers to that HTTPS origin: Firebase authorized domain, Stripe webhook `https://your.domain.example/api/webhooks/stripe`, SendGrid API key starting `SG.` plus a verified sender ([app.sendgrid.com](https://app.sendgrid.com/settings/api_keys)).
+4. Then attach providers to that HTTPS origin: Firebase authorized domain, Stripe webhook `https://your.domain.example/api/webhooks/stripe` (Checkout, subscription, and invoice events in [`docs/operations.md`](docs/operations.md#stripe-when-you-have-keys)), SendGrid API key starting `SG.` plus a verified sender ([app.sendgrid.com](https://app.sendgrid.com/settings/api_keys)).
 
 Full sequence, backup/restore, upgrades, SendGrid vs Twilio keys: [`docs/operations.md`](docs/operations.md).
 

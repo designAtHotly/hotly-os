@@ -642,6 +642,10 @@ configure_stripe() {
   echo ""
   info "Stripe: Checkout amounts are server USD cents. Guests pay your account."
   info "Dashboard webhook URL: $(env_get PUBLIC_APP_URL)/api/webhooks/stripe"
+  info "Enable only: checkout.session.completed, checkout.session.async_payment_succeeded,"
+  info "checkout.session.async_payment_failed, checkout.session.expired,"
+  info "customer.subscription.created, customer.subscription.updated, customer.subscription.deleted,"
+  info "invoice.paid, invoice.payment_succeeded. Not listen-to-all. Docs: docs/operations.md"
   info "Local CLI listen uses a whsec_ from \`stripe listen\`, not the Dashboard secret."
   info "https://dashboard.stripe.com/apikeys"
   if [[ "$SKIP_STRIPE" == true ]]; then
