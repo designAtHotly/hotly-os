@@ -27,7 +27,16 @@ On that machine you need **both**:
 
 The old `docker-compose` (hyphen) binary is not enough. The installer will not install Docker or Compose for you.
 
-Linux: [Install Docker Engine](https://docs.docker.com/engine/install/) (current packages include the Compose plugin). macOS local: [OrbStack](https://orbstack.dev/) or Docker Desktop.
+On an Ubuntu/Debian VPS as root (same command we used; Engine plus Compose v2):
+
+```bash
+curl -fsSL https://get.docker.com | sh
+systemctl enable --now docker
+docker info
+docker compose version
+```
+
+Not for macOS. Official packages: [Install Docker Engine](https://docs.docker.com/engine/install/). macOS local: [OrbStack](https://orbstack.dev/) or Docker Desktop.
 
 ### Domain and DNS
 

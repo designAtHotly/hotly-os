@@ -138,8 +138,13 @@ macOS needs OrbStack or Docker Desktop, not get.docker.com). Windows is not a
 supported host.
 
 Install:
-  • Linux VPS: Docker Engine + Compose v2 — https://docs.docker.com/engine/install/
+  • Linux VPS (Ubuntu/Debian, as root — Engine + Compose v2):
+      curl -fsSL https://get.docker.com | sh
+      systemctl enable --now docker
+      docker info && docker compose version
+    Distro packages: https://docs.docker.com/engine/install/
   • macOS:     https://orbstack.dev/  or Docker Desktop (includes Compose v2)
+    Do not run get.docker.com on a Mac.
 
 You need both the daemon (\`docker info\`) and the Compose v2 plugin
 (\`docker compose version\`, with a space). The old docker-compose (hyphen)

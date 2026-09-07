@@ -37,7 +37,18 @@ amd64 Linux is the documented VPS architecture. The same Compose file also runs 
 
 Do **not** copy `.env`, `.secrets/`, or `.backup/` onto the host. Do **not** start by hand-editing `.env` or running `docker compose` yourself. The installer writes `.env` (origin, creator, provider keys, session and Garage/S3 secrets) and starts Compose. It does not install Docker, create DNS, or provision certificates.
 
-On the VPS first: Docker Engine and Compose v2, TCP 80 and 443 open, hostname pointing at this box (**DNS only** / grey cloud on Cloudflare until Let’s Encrypt succeeds). Size at least **2 vCPU / 4 GB** if you build images on the host. The application does not install Docker for you.
+On the VPS first: Docker Engine and Compose v2, TCP 80 and 443 open, hostname pointing at this box (**DNS only** / grey cloud on Cloudflare until Let’s Encrypt succeeds). Size at least **2 vCPU / 4 GB** if you build images on the host. The Hotly installer does not install Docker for you.
+
+On Ubuntu/Debian as root (convenience script from [get.docker.com](https://get.docker.com); Engine plus the Compose v2 plugin). Not for macOS.
+
+```bash
+curl -fsSL https://get.docker.com | sh
+systemctl enable --now docker
+docker info
+docker compose version
+```
+
+That last line is `docker compose` with a space. The old `docker-compose` (hyphen) binary is not enough. Distro packages and the longer apt repo path: [Install Docker Engine](https://docs.docker.com/engine/install/). macOS: [OrbStack](https://orbstack.dev/) or Docker Desktop, not `get.docker.com`.
 
 Then:
 
