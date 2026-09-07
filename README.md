@@ -104,10 +104,10 @@ bun run dev
 
 Bring **DNS up before** the first public Compose. A raw droplet IP is a smoke host, not the origin guests, Google, Stripe, or recovery mail should use.
 
-Pin a **Release tag** (`v0.1.3`), not a drifting `main`:
+Pin a **Release tag** (`v0.1.4`), not a drifting `main`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.3/scripts/install.sh | bash -s -- --tag v0.1.3 --github designAtHotly/hotly-os
+curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.4/scripts/install.sh | bash -s -- --tag v0.1.4 --github designAtHotly/hotly-os
 ```
 
 That unpacks to **`~/hotly-os`** (or `--dir` / `HOTLY_ROOT`). `.env` is `~/hotly-os/.env`. From a checkout of that tag: `./scripts/install.sh --local`.
