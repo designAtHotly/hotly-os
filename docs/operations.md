@@ -8,9 +8,9 @@ This file is the runbook for this repository. Operators pin GitHub Release tag `
 
 - A Linux VPS (or local Linux/macOS Docker). **Docker Engine and Compose v2** both. Windows is not supported. See the product README Prerequisites.
 - A public URL (`PUBLIC_APP_URL`) that browsers will use. The same value is the canonical origin for Open Graph, `/robots.txt`, and `/sitemap.xml` (web container, runtime — not baked at image build).
-- A singleton creator email (`CREATOR_EMAIL`).
-- Operator-owned Firebase (Google sign-in), Stripe, and SendGrid accounts.
-- Locally generated secrets (`SESSION_SECRET`, `RECOVERY_TOKEN_SECRET`, Garage keys). Never commit `.env`.
+- A singleton creator email (`CREATOR_EMAIL`) and display name (`CREATOR_DISPLAY_NAME`).
+- Operator-owned Firebase (Google sign-in), Stripe, and SendGrid accounts and the env vars in [Stripe, Firebase, SendGrid](#stripe-firebase-sendgrid).
+- `.env` is never committed. `scripts/install.sh` writes `SESSION_SECRET`, `RECOVERY_TOKEN_SECRET`, `GARAGE_RPC_SECRET`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` on the box. It does not rotate `POSTGRES_PASSWORD` (Compose default unless you change it).
 
 The application does not create a second creator, Connect/wallets, or a Hotly-owned provider account.
 
@@ -59,28 +59,31 @@ Do **not** treat a raw public IP as the production origin. Firebase authorized d
 2. Open TCP 80 and 443. Size the box at least **2 vCPU / 4 GB** if you build images on the host.
 3. Clone or curl this tree at tag `v0.1.2` (no `.env` / `.secrets` / `.backup`). Put `PUBLIC_APP_URL=https://your.domain.example` and `CADDY_SITE=your.domain.example` in `.env`.
 4. `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml` (plus override if you use one). `docker compose up --build -d`. Confirm `GET https://your.domain.example/api/health`.
-5. Then providers: Firebase authorized domain = that hostname; Stripe webhook `https://your.domain.example/api/webhooks/stripe`; SendGrid `SG.` key + verified sender.
+5. Then providers: Firebase authorized domain = that hostname; Stripe webhook `https://your.domain.example/api/webhooks/stripe`; SendGrid `SG.` key + verified sender. Env names: [Stripe, Firebase, SendGrid](#stripe-firebase-sendgrid).
 
 Local OrbStack may stay `http://localhost` and skip DNS.
 
 ## Configure and start
 
-Preferred: [`scripts/install.sh`](../scripts/install.sh) (`./scripts/install.sh --local` on a checkout). It refuses a missing Docker daemon with install URLs, refuses Docker with fewer than 2 CPUs / ~4 GB RAM (proven on-box build floor), writes `.env`, and runs Compose without `down -v`. Paste the "System (paste this in a GitHub issue)" block when reporting install failures.
+Preferred: [`scripts/install.sh`](../scripts/install.sh) (`./scripts/install.sh --local` on a checkout). It refuses a missing Docker daemon with install URLs, refuses Docker with fewer than 2 CPUs / ~4 GB RAM, writes `.env` (including session and Garage/S3 secrets), and runs Compose without `down -v`. Paste the "System (paste this in a GitHub issue)" block when reporting install failures.
 
 Or by hand from this directory:
 
 ```bash
 cp .env.example .env
-# Replace CREATOR_EMAIL, secrets, and provider keys.
+# Set CREATOR_EMAIL and provider keys. Generate SESSION_SECRET, RECOVERY_TOKEN_SECRET,
+# GARAGE_RPC_SECRET, S3_ACCESS_KEY, and S3_SECRET_KEY if you are not using the installer.
 docker compose up --build
 ```
 
 On a public VPS, add the prod overlay so Postgres, the API, and Next.js are not published. Put this in `.env` so `backup.sh` / `restore.sh` use the same files:
 
 ```bash
-COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml:docker-compose.override.yml
+COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 docker compose up --build -d
 ```
+
+Only append `:docker-compose.override.yml` if that file exists (Firebase JSON mount). Compose fails if `COMPOSE_FILE` names a missing file. The installer adds the override only when it is present.
 
 Compose starts PostgreSQL 18, runs `db/migrations` before the API, then the Go API, Next.js, Garage (private S3), and Caddy. Browsers should use Caddy (`PUBLIC_APP_URL`), not `:3000` or `:8080`.
 
@@ -185,6 +188,21 @@ That is the local clean-machine check. A public host still needs a real `CADDY_S
 
 Leave a provider empty to boot the stack. User-facing pages then report that the provider is not configured (503 from the API, copy on `/auth/firebase`, `/auth/chat-recovery`, and `/penpal`). Filling the env and recreating `server` enables that provider. Changing `CREATOR_EMAIL` revokes creator sessions and never creates a second creator.
 
+Installer prompts that look like `[y/N]` need `y` or `n` first. Do not paste an API key at that question.
+
+### Firebase (when you have a project)
+
+```bash
+FIREBASE_PROJECT_ID=
+FIREBASE_WEB_API_KEY=
+FIREBASE_AUTH_DOMAIN=   # usually project.firebaseapp.com
+FIREBASE_CREDENTIALS_JSON=/run/secrets/firebase.json
+CREATOR_EMAIL=          # the one Google account that may open /creator
+CREATOR_DISPLAY_NAME=
+```
+
+After the hostname is live, add it under Authentication → authorized domains. A second Google account must not open `/creator`.
+
 Firebase admin JSON must be readable **inside** the API container (user `hotly`). If you bind-mount `.secrets/firebase.json` as root-owned `600`, startup fails with invalid credentials. Use `chmod 644` on the host file, or an override like `docker-compose.override.yml`:
 
 ```yaml
@@ -196,9 +214,21 @@ services:
 
 Then set `FIREBASE_CREDENTIALS_JSON=/run/secrets/firebase.json`.
 
+### Stripe (when you have keys)
+
+Test mode is enough for a first install. Card `4242` is fine.
+
+```bash
+STRIPE_SECRET_KEY=        # sk_test_… / sk_live_… / rkcs_…
+STRIPE_PUBLISHABLE_KEY=   # pk_…
+STRIPE_WEBHOOK_SECRET=    # whsec_… from the Dashboard endpoint for this hostname
+```
+
+Webhook URL: `https://your.domain.example/api/webhooks/stripe` (raw body, signed). Do not reuse a `stripe listen` secret. Put each value in the matching installer prompt — do not swap `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`.
+
 ### SendGrid (when you have a key)
 
-Operator-owned account only. Prove mail **locally**; a public VPS is not required. Use a **SendGrid** API key from [app.sendgrid.com/settings/api_keys](https://app.sendgrid.com/settings/api_keys) (it starts with `SG.`). Do not use a Twilio Account SID, Auth Token, or API key SID (`SK…` + client secret). The three env vars must all be set or mail stays off:
+Operator-owned account only. Check mail **locally**; a public VPS is not required. Use a **SendGrid** API key from [app.sendgrid.com/settings/api_keys](https://app.sendgrid.com/settings/api_keys) (it starts with `SG.`). Do not use a Twilio Account SID, Auth Token, or API key SID (`SK…` + client secret). Do not paste `SENDGRID_API_KEY` at a `[y/N]` installer prompt. The three env vars must all be set or mail stays off:
 
 ```bash
 SENDGRID_API_KEY=SG. …

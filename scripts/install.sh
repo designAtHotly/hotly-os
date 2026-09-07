@@ -333,7 +333,7 @@ report_and_gate_spec() {
   case "$machine" in
     x86_64 | amd64 | arm64 | aarch64) ;;
     *)
-      warn "Unproven architecture (${machine}). VPS proof was amd64; OrbStack arm64 also builds from source."
+      warn "Unusual architecture (${machine}). Documented VPS path is amd64 Linux; the same Compose file also builds on arm64 (OrbStack / Apple Silicon)."
       ;;
   esac
 
