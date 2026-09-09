@@ -1,6 +1,10 @@
 import { createCoffeeCheckoutSession } from "@/lib/api/creator";
 import { ApiError } from "@/lib/api/impl/base";
-import type { CoffeeCreator, CoffeeTier, ChargeAmount } from "@/types/coffee.types";
+import type {
+  CoffeeCreator,
+  CoffeeTier,
+  ChargeAmount,
+} from "@/types/coffee.types";
 
 interface CreateCheckoutParams {
   creator: CoffeeCreator;
@@ -16,15 +20,21 @@ interface CheckoutResult {
 }
 
 export async function createCheckout({
+  selectedTier,
   message,
+  chargeAmount,
   isRecurring,
   email,
 }: CreateCheckoutParams): Promise<CheckoutResult> {
   try {
     const { body } = await createCoffeeCheckoutSession({
+      custom_amount_cents: selectedTier.is_custom
+        ? chargeAmount.price_in_cents
+        : undefined,
+      email: email || undefined,
       message: message.trim(),
       recurring: isRecurring,
-      email: email || undefined,
+      tier: selectedTier.key,
     });
 
     if (!body?.url) {
@@ -32,16 +42,16 @@ export async function createCheckout({
     }
 
     return { url: body.url };
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 503) {
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 503) {
       throw new ApiError({
         status: 503,
         statusText: "Payments are not configured on this instance.",
-        url: err.url,
-        method: err.method,
-        body: err.response,
+        url: error.url,
+        method: error.method,
+        body: error.response,
       });
     }
-    throw err;
+    throw error;
   }
 }

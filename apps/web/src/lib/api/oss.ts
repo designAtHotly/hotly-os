@@ -1,8 +1,10 @@
-import type { CoffeeCreator, CreatorPricing } from "@/types/coffee.types";
-import type { BrandVariant } from "@/lib/utils/variant";
-import { apiCall, ok, type ApiResponse } from "./impl/base";
-import type { ChatMessage, CreatorChatResponse } from "./chat-types";
 import { appMediaUrl } from "@/lib/media/url";
+import type { BrandVariant } from "@/lib/utils/variant";
+import type { CoffeeCreator, CreatorPricing } from "@/types/coffee.types";
+
+import type { ChatMessage, CreatorChatResponse } from "./chat-types";
+import { apiCall, ok } from './impl/base';
+import type { ApiResponse } from './impl/base';
 
 export type { CoffeeCreator };
 
@@ -27,15 +29,19 @@ export interface AuthCreator {
   response_day?: string;
 }
 
-function sanitizeAttachment(attachment: ChatMessageAttachment): ChatMessageAttachment {
+function sanitizeAttachment(
+  attachment: ChatMessageAttachment
+): ChatMessageAttachment {
   return {
     ...attachment,
-    signed_url: appMediaUrl(attachment.signed_url),
     signed_thumbnail_url: appMediaUrl(attachment.signed_thumbnail_url) ?? null,
+    signed_url: appMediaUrl(attachment.signed_url),
   };
 }
 
-function sanitizeAttachments(attachments?: ChatMessageAttachment[] | null): ChatMessageAttachment[] | undefined {
+function sanitizeAttachments(
+  attachments?: ChatMessageAttachment[] | null
+): ChatMessageAttachment[] | undefined {
   if (!attachments) {
     return attachments ?? undefined;
   }
@@ -203,14 +209,18 @@ export async function createCoffeeCheckoutSession(params: {
   product_name?: string;
   currency_code?: string;
   email?: string;
+  tier?: string;
+  custom_amount_cents?: number;
 }): Promise<ApiResponse<CheckoutResponse>> {
   return apiCall("/api/penpal/checkout", {
-    method: "POST",
     body: JSON.stringify({
       message: params.message,
       email: params.email,
       recurring: params.recurring === true,
+      tier: params.tier,
+      custom_amount_cents: params.custom_amount_cents,
     }),
+    method: "POST",
   });
 }
 
@@ -235,13 +245,18 @@ export async function createContentUnlockCheckout(params: {
 }): Promise<ApiResponse<CheckoutResponse>> {
   const messageId = Number(params.message_id || params.message_uuid);
   return apiCall("/api/chat/unlock", {
-    method: "POST",
     body: JSON.stringify({ message_id: messageId }),
+    method: "POST",
   });
 }
 
 export async function getCreatorProfile(): Promise<ApiResponse<AuthCreator>> {
-  const session = await apiCall<{ email: string; display_name: string; is_creator: boolean; user_id: number }>("/api/creator");
+  const session = await apiCall<{
+    email: string;
+    display_name: string;
+    is_creator: boolean;
+    user_id: number;
+  }>("/api/creator");
   const offer = await apiCall<{
     display_name: string;
     description: string;
@@ -250,18 +265,18 @@ export async function getCreatorProfile(): Promise<ApiResponse<AuthCreator>> {
   }>("/api/penpal");
   const userId = session.body?.user_id || 1;
   return ok({
+    avatar_url: appMediaUrl(offer.body?.avatar_url),
+    bio: offer.body?.description,
+    chat_attachment_policy: "creator",
+    created_at: new Date().toISOString(),
+    email: session.body?.email || "",
     id: userId,
-    uuid: "creator",
+    name: offer.body?.display_name || session.body?.display_name,
+    support_theme: offer.body?.support_item,
     user_id: userId,
     username: "creator",
-    bio: offer.body?.description,
-    created_at: new Date().toISOString(),
-    name: offer.body?.display_name || session.body?.display_name,
-    avatar_url: appMediaUrl(offer.body?.avatar_url),
-    email: session.body?.email || "",
+    uuid: "creator",
     variant: "penpal",
-    support_theme: offer.body?.support_item,
-    chat_attachment_policy: "creator",
   });
 }
 
@@ -270,20 +285,24 @@ export async function updateCreatorProfile(params: {
   description?: string;
   support_item?: string;
   one_time_price_cents?: number;
-  one_time_character_limit?: number;
+  price_250_cents?: number;
+  price_500_cents?: number;
+  price_1000_cents?: number;
   weekly_price_cents?: number;
   currency?: string;
 }): Promise<ApiResponse<AuthCreator>> {
   await apiCall("/api/creator/settings", {
-    method: "PATCH",
     body: JSON.stringify(params),
+    method: "PATCH",
   });
   return getCreatorProfile();
 }
 
-export async function fetchCreatorDashboard(): Promise<ApiResponse<ApiDashboardResponse>> {
+export async function fetchCreatorDashboard(): Promise<
+  ApiResponse<ApiDashboardResponse>
+> {
   const inbox = await apiCall<{
-    conversations: Array<{
+    conversations: {
       conversation: {
         id: number;
         guest_user_id: number;
@@ -304,116 +323,132 @@ export async function fetchCreatorDashboard(): Promise<ApiResponse<ApiDashboardR
         created_at?: { Time?: string } | string;
         attachments?: ChatMessageAttachment[];
       };
-    }>;
+    }[];
   }>("/api/creator/inbox");
-  const chats: ApiCreatorChat[] = (inbox.body?.conversations || []).map((row) => {
-    const id = row.conversation.id;
-    const last = row.last_message;
-    const created = timestamp(row.conversation.created_at);
-    const activity = timestamp(row.conversation.last_activity_at) || created;
-    return {
-      id,
-      uuid: String(id),
-      is_active: true,
-      created_at: created,
-      updated_at: activity,
-      fan_user_id: row.guest_user_id,
-      fan_name: row.guest_email,
-      fan_avatar_url: null,
-      last_message_id: last?.id ?? null,
-      last_message_uuid: String(id),
-      last_message_content: last?.body ?? null,
-      last_message_sender_id: last?.author_user_id ?? null,
-      last_message_created_at: timestamp(last?.created_at) || null,
-      prev_message_content: null,
-      prev_message_sender_id: null,
-      last_fan_message_content: last?.body ?? null,
-      last_message_payment_cents: null,
-      last_message_product_name: null,
-      is_subscriber: row.is_subscriber === true,
-      subscription_amount_cents: row.subscription_amount_cents ?? null,
-      total_paid_cents: row.total_paid_cents ?? 0,
-      currency_code: "usd",
-      last_message_attachments: sanitizeAttachments(last?.attachments),
-      blocked_at: timestamp(row.conversation.blocked_at) || null,
-    };
-  });
+  const chats: ApiCreatorChat[] = (inbox.body?.conversations || []).map(
+    (row) => {
+      const {id} = row.conversation;
+      const last = row.last_message;
+      const created = timestamp(row.conversation.created_at);
+      const activity = timestamp(row.conversation.last_activity_at) || created;
+      return {
+        blocked_at: timestamp(row.conversation.blocked_at) || null,
+        created_at: created,
+        currency_code: "usd",
+        fan_avatar_url: null,
+        fan_name: row.guest_email,
+        fan_user_id: row.guest_user_id,
+        id,
+        is_active: true,
+        is_subscriber: row.is_subscriber === true,
+        last_fan_message_content: last?.body ?? null,
+        last_message_attachments: sanitizeAttachments(last?.attachments),
+        last_message_content: last?.body ?? null,
+        last_message_created_at: timestamp(last?.created_at) || null,
+        last_message_id: last?.id ?? null,
+        last_message_payment_cents: null,
+        last_message_product_name: null,
+        last_message_sender_id: last?.author_user_id ?? null,
+        last_message_uuid: String(id),
+        prev_message_content: null,
+        prev_message_sender_id: null,
+        subscription_amount_cents: row.subscription_amount_cents ?? null,
+        total_paid_cents: row.total_paid_cents ?? 0,
+        updated_at: activity,
+        uuid: String(id),
+      };
+    }
+  );
   return ok({
+    active_subscriber_count: chats.filter((c) => c.is_subscriber).length,
     chats,
-    stats: {
-      total_earned: 0,
-      penpal_count: chats.length,
-      total_supporters: chats.length,
-      pending_replies: chats.filter((c) => c.last_message_sender_id === c.fan_user_id).length,
-    },
     earnings_by_currency: [],
     earnings_by_currency_this_month: [],
     grants_by_currency: [],
+    mrr_by_currency: [],
     referral_count: 0,
     referral_earnings_by_currency: [],
-    active_subscriber_count: chats.filter((c) => c.is_subscriber).length,
-    mrr_by_currency: [],
+    stats: {
+      pending_replies: chats.filter(
+        (c) => c.last_message_sender_id === c.fan_user_id
+      ).length,
+      penpal_count: chats.length,
+      total_earned: 0,
+      total_supporters: chats.length,
+    },
   });
 }
 
-function timestamp(value: { Valid?: boolean; Time?: string } | string | null | undefined): string {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (value.Valid === false) return "";
+function timestamp(
+  value: { Valid?: boolean; Time?: string } | string | null | undefined
+): string {
+  if (!value) {return "";}
+  if (typeof value === "string") {return value;}
+  if (value.Valid === false) {return "";}
   return value.Time || "";
 }
 
-export async function fetchCreatorPricing(_username?: string): Promise<CreatorPricing> {
+export async function fetchCreatorPricing(
+  _username?: string
+): Promise<CreatorPricing> {
   const offer = await apiCall<{
     one_time_price_cents: number;
-    one_time_character_limit: number;
+    price_250_cents?: number;
+    price_500_cents?: number;
+    price_1000_cents?: number;
     weekly_price_cents: number;
     weekly_allowance_chars: number;
     currency: string;
   }>("/api/penpal");
-  const oneTime = offer.body?.one_time_price_cents || 500;
+  const price250 =
+    offer.body?.price_250_cents || offer.body?.one_time_price_cents || 500;
   return {
+    character_limit: 250,
     currencyCode: offer.body?.currency || "usd",
-    price_250: oneTime,
-    price_500: oneTime,
-    price_1000: oneTime,
-    character_limit: offer.body?.one_time_character_limit,
-    weekly_price_cents: offer.body?.weekly_price_cents,
+    price_1000: offer.body?.price_1000_cents || 1500,
+    price_250: price250,
+    price_500: offer.body?.price_500_cents || 1000,
     weekly_allowance_chars: offer.body?.weekly_allowance_chars,
+    weekly_price_cents: offer.body?.weekly_price_cents,
   };
 }
 
 export async function requestChatMagicLink(
   _creatorUsername: string,
-  email: string,
+  email: string
 ): Promise<ApiResponse<{ message: string }>> {
   return apiCall("/api/penpal/recovery", {
-    method: "POST",
     body: JSON.stringify({ email }),
+    method: "POST",
   });
 }
 
-export async function consumeChatRecovery(token: string): Promise<ApiResponse<{ token?: string }>> {
+export async function consumeChatRecovery(
+  token: string
+): Promise<ApiResponse<{ token?: string }>> {
   return apiCall("/api/penpal/recovery/consume", {
-    method: "POST",
     body: JSON.stringify({ token }),
+    method: "POST",
   });
 }
 
-export async function getCheckoutToken(sessionId: string): Promise<ApiResponse<{ token?: string; email?: string }>> {
+export async function getCheckoutToken(
+  sessionId: string
+): Promise<ApiResponse<{ token?: string; email?: string }>> {
   return apiCall("/api/penpal/claim", {
-    method: "POST",
     body: JSON.stringify({ session_id: sessionId }),
+    method: "POST",
   });
 }
 
 export async function getCreatorChatByUsername(
   _username: string,
-  _token?: string,
+  _token?: string
 ): Promise<ApiResponse<CreatorChatResponse>> {
   const res = await apiCall<CreatorChatResponse>("/api/chat");
   if (res.body?.artist) {
-    res.body.artist.avatar_url = appMediaUrl(res.body.artist.avatar_url) ?? null;
+    res.body.artist.avatar_url =
+      appMediaUrl(res.body.artist.avatar_url) ?? null;
   }
   if (res.body?.messages) {
     res.body.messages = res.body.messages.map((message) => ({
@@ -430,21 +465,25 @@ export async function getCreatorChatByUsername(
 export async function sendChatMessage(
   _chatId: string,
   content: string,
-  _token?: string,
+  _token?: string
 ): Promise<ApiResponse<ChatMessage>> {
-  const res = await apiCall<{ id: number | string; body?: string; created_at?: string }>("/api/chat/messages", {
-    method: "POST",
+  const res = await apiCall<{
+    id: number | string;
+    body?: string;
+    created_at?: string;
+  }>("/api/chat/messages", {
     body: JSON.stringify({ body: content }),
+    method: "POST",
   });
   const row = res.body;
   return ok({
+    amount_cents: null,
+    content: row?.body || content,
+    created_at: row?.created_at || new Date().toISOString(),
+    currency_code: null,
     id: String(row?.id ?? Date.now()),
     sender_type: "fan",
-    content: row?.body || content,
     tier: null,
-    amount_cents: null,
-    currency_code: null,
-    created_at: row?.created_at || new Date().toISOString(),
   });
 }
 
@@ -453,23 +492,29 @@ export async function replyToMessage(
   content: string,
   attachments?: ChatAttachmentRequest[],
   priceInCents?: number,
-  _priceCurrencyCode?: string,
+  _priceCurrencyCode?: string
 ): Promise<ApiResponse<{ attachments?: ChatMessageAttachment[] }>> {
-  const res = await apiCall<{ attachments?: ChatMessageAttachment[] }>(`/api/creator/inbox/${chatId}/reply`, {
-    method: "POST",
-    body: JSON.stringify({
-      body: content,
-      object_keys: (attachments || []).map((a) => a.url).filter(Boolean),
-      unlock_price_cents: priceInCents && priceInCents > 0 ? priceInCents : undefined,
-    }),
-  });
+  const res = await apiCall<{ attachments?: ChatMessageAttachment[] }>(
+    `/api/creator/inbox/${chatId}/reply`,
+    {
+      body: JSON.stringify({
+        body: content,
+        object_keys: (attachments || []).map((a) => a.url).filter(Boolean),
+        unlock_price_cents:
+          priceInCents && priceInCents > 0 ? priceInCents : undefined,
+      }),
+      method: "POST",
+    }
+  );
   return ok({ attachments: sanitizeAttachments(res.body?.attachments) || [] });
 }
 
-export async function fetchChatMessages(chatId: number | string): Promise<ApiResponse<ApiChatMessage[]>> {
+export async function fetchChatMessages(
+  chatId: number | string
+): Promise<ApiResponse<ApiChatMessage[]>> {
   const thread = await apiCall<{
     guest_user_id: number;
-    messages?: Array<{
+    messages?: {
       id: number;
       body: string;
       author_user_id: number;
@@ -477,40 +522,51 @@ export async function fetchChatMessages(chatId: number | string): Promise<ApiRes
       attachments?: ChatMessageAttachment[];
       unlock_price_cents?: number;
       is_unlocked?: boolean;
-    }>;
+    }[];
   }>(`/api/creator/inbox/${chatId}`);
   const guestId = thread.body?.guest_user_id;
   return ok(
     (thread.body?.messages || []).map((m) => ({
-      id: String(m.id),
+      amount_cents: m.unlock_price_cents ?? null,
+      attachments: sanitizeAttachments(m.attachments),
       content: m.body,
+      created_at: timestamp(m.created_at),
+      currency_code: m.unlock_price_cents ? "usd" : null,
+      id: String(m.id),
+      is_creator: guestId != null && m.author_user_id !== guestId,
       sender_id: m.author_user_id,
       sender_name: null,
-      is_creator: guestId != null && m.author_user_id !== guestId,
-      amount_cents: m.unlock_price_cents ?? null,
-      currency_code: m.unlock_price_cents ? "usd" : null,
       tier: null,
-      attachments: sanitizeAttachments(m.attachments),
-      created_at: timestamp(m.created_at),
-    })),
+    }))
   );
 }
 
-export async function uploadCreatorMedia(file: File): Promise<ApiResponse<{ object_key: string; type: string; filename: string; size: number }>> {
+export async function uploadCreatorMedia(
+  file: File
+): Promise<
+  ApiResponse<{
+    object_key: string;
+    type: string;
+    filename: string;
+    size: number;
+  }>
+> {
   const body = new FormData();
   body.append("file", file);
-  return apiCall("/api/creator/media", { method: "POST", body });
+  return apiCall("/api/creator/media", { body, method: "POST" });
 }
 
-export async function uploadCreatorAvatar(file: File): Promise<ApiResponse<{ object_key: string }>> {
+export async function uploadCreatorAvatar(
+  file: File
+): Promise<ApiResponse<{ object_key: string }>> {
   const body = new FormData();
   body.append("file", file);
-  return apiCall("/api/creator/avatar", { method: "POST", body });
+  return apiCall("/api/creator/avatar", { body, method: "POST" });
 }
 
 export async function createManageSubscriptionURL(
   _subscriptionUuid?: string,
-  _token?: string,
+  _token?: string
 ): Promise<ApiResponse<{ url?: string }>> {
   return ok();
 }
@@ -532,12 +588,18 @@ export async function unblockChat(chatUuid: string): Promise<ApiResponse> {
   return apiCall(`/api/creator/inbox/${chatUuid}/unblock`, { method: "POST" });
 }
 
-export async function getCommunityNotesByPromptV2(promptUuid: string): Promise<ApiResponse<CommunityNotesV2Response>> {
+export async function getCommunityNotesByPromptV2(
+  promptUuid: string
+): Promise<ApiResponse<CommunityNotesV2Response>> {
   return apiCall(`/api/dome/prompts/${encodeURIComponent(promptUuid)}/notes`);
 }
 
-export async function getCommunityNotesByUser(promptUuid: string): Promise<ApiResponse<CommunityNote[]>> {
-  return apiCall(`/api/dome/prompts/${encodeURIComponent(promptUuid)}/notes?mine=1`);
+export async function getCommunityNotesByUser(
+  promptUuid: string
+): Promise<ApiResponse<CommunityNote[]>> {
+  return apiCall(
+    `/api/dome/prompts/${encodeURIComponent(promptUuid)}/notes?mine=1`
+  );
 }
 
 export async function createCommunityNote(params: {
@@ -552,7 +614,6 @@ export async function createCommunityNote(params: {
   parent_uuid?: string;
 }): Promise<ApiResponse<CommunityNote>> {
   return apiCall("/api/dome/notes", {
-    method: "POST",
     body: JSON.stringify({
       prompt_uuid: params.prompt_uuid,
       content: params.content,
@@ -562,6 +623,7 @@ export async function createCommunityNote(params: {
       is_anonymous: params.is_anonymous === true,
       parent_uuid: params.parent_uuid,
     }),
+    method: "POST",
   });
 }
 
@@ -570,22 +632,28 @@ export async function createCommunityPrompt(params: {
   content: string;
 }): Promise<ApiResponse<CommunityPrompt>> {
   const res = await apiCall<{ prompt: CommunityPrompt }>("/api/dome/prompts", {
-    method: "POST",
     body: JSON.stringify({ content: params.content }),
+    method: "POST",
   });
-  return { status: res.status, body: res.body?.prompt };
+  return { body: res.body?.prompt, status: res.status };
 }
 
-export async function getCommunityByCreator(_uuid: string): Promise<ApiResponse<Community | null>> {
+export async function getCommunityByCreator(
+  _uuid: string
+): Promise<ApiResponse<Community | null>> {
   const res = await apiCall<{ community: Community | null }>("/api/dome");
-  return { status: res.status, body: res.body?.community ?? null };
+  return { body: res.body?.community ?? null, status: res.status };
 }
 
-export async function getCommunityPromptsWithNoteCount(_uuid: string): Promise<ApiResponse<CommunityPromptWithNoteCount[]>> {
+export async function getCommunityPromptsWithNoteCount(
+  _uuid: string
+): Promise<ApiResponse<CommunityPromptWithNoteCount[]>> {
   return apiCall("/api/dome/prompts");
 }
 
-export async function getCommunityMembers(_uuid: string): Promise<ApiResponse<CommunityMember[]>> {
+export async function getCommunityMembers(
+  _uuid: string
+): Promise<ApiResponse<CommunityMember[]>> {
   return apiCall("/api/dome/members");
 }
 
@@ -594,7 +662,10 @@ export async function createCommunity(params: {
   first_prompt: string;
 }): Promise<ApiResponse<{ community: Community; prompt: CommunityPrompt }>> {
   return apiCall("/api/dome/prompts", {
+    body: JSON.stringify({
+      first_prompt: params.first_prompt,
+      content: params.first_prompt,
+    }),
     method: "POST",
-    body: JSON.stringify({ first_prompt: params.first_prompt, content: params.first_prompt }),
   });
 }

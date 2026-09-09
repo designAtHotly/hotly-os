@@ -35,6 +35,7 @@ var (
 	ErrAlreadyUnlocked       = errors.New("already_unlocked")
 	ErrInvalidUnlockPrice    = errors.New("invalid_unlock_price")
 	ErrTooManyAttachments    = errors.New("too_many_attachments")
+	ErrInvalidTier           = errors.New("invalid_tier")
 )
 
 type Repository interface {
@@ -106,9 +107,11 @@ func NewService(cfg *config.Config, repo Repository, stripe billing.Gateway, mai
 }
 
 type CheckoutInput struct {
-	Email     string
-	Message   string
-	Recurring bool
+	Email             string
+	Message           string
+	Recurring         bool
+	Tier              string
+	CustomAmountCents int64
 }
 
 func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, error) {
@@ -134,16 +137,23 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 		offer = BuildOffer(s.cfg, creator)
 	}
 	kind := "one_time_message"
-	amount := offer.OneTimePriceCents
-	limit := offer.OneTimeCharacterLimit
 	product := offer.DisplayName + " Penpal note"
+	amount := offer.Price250Cents
+	limit := limit250
 	if in.Recurring {
 		kind = "weekly_subscription"
 		amount = offer.WeeklyPriceCents
 		limit = offer.WeeklyAllowanceChars
 		product = offer.DisplayName + " weekly Penpal"
+	} else {
+		resolvedAmount, resolvedLimit, err := offer.ResolveOneTime(in.Tier, in.CustomAmountCents)
+		if err != nil {
+			return "", err
+		}
+		amount = resolvedAmount
+		limit = resolvedLimit
 	}
-	if utf8.RuneCountInString(message) > limit {
+	if limit > 0 && utf8.RuneCountInString(message) > limit {
 		return "", ErrMessageTooLong
 	}
 

@@ -21,6 +21,8 @@ type Config struct {
 	SupportItem           string
 	OneTimePriceCents     int64
 	OneTimeCharacterLimit int
+	Price500Cents         int64
+	Price1000Cents        int64
 	WeeklyPriceCents      int64
 	WeeklyAllowanceChars  int
 	SessionSecret         string
@@ -87,6 +89,8 @@ func Load() (*Config, error) {
 		RecoveryTokenSecret:   os.Getenv("RECOVERY_TOKEN_SECRET"),
 		OneTimePriceCents:     int64(intEnv("ONE_TIME_PRICE_CENTS", 500)),
 		OneTimeCharacterLimit: intEnv("ONE_TIME_CHARACTER_LIMIT", 250),
+		Price500Cents:         int64(intEnv("ONE_TIME_PRICE_500_CENTS", 1000)),
+		Price1000Cents:        int64(intEnv("ONE_TIME_PRICE_1000_CENTS", 1500)),
 		WeeklyPriceCents:      int64(intEnv("WEEKLY_PRICE_CENTS", 1500)),
 		WeeklyAllowanceChars:  intEnv("WEEKLY_ALLOWANCE_CHARS", 2000),
 		Firebase: FirebaseConfig{
@@ -155,8 +159,8 @@ func Load() (*Config, error) {
 	default:
 		return nil, fmt.Errorf("SUPPORT_ITEM must be coffee, cocktail, or lemonade")
 	}
-	if cfg.OneTimePriceCents <= 0 || cfg.WeeklyPriceCents <= 0 {
-		return nil, fmt.Errorf("ONE_TIME_PRICE_CENTS and WEEKLY_PRICE_CENTS must be positive integer USD cents")
+	if cfg.OneTimePriceCents <= 0 || cfg.Price500Cents <= 0 || cfg.Price1000Cents <= 0 || cfg.WeeklyPriceCents <= 0 {
+		return nil, fmt.Errorf("ONE_TIME_PRICE_CENTS, ONE_TIME_PRICE_500_CENTS, ONE_TIME_PRICE_1000_CENTS, and WEEKLY_PRICE_CENTS must be positive integer USD cents")
 	}
 	if cfg.OneTimeCharacterLimit <= 0 {
 		return nil, fmt.Errorf("ONE_TIME_CHARACTER_LIMIT must be a positive integer")

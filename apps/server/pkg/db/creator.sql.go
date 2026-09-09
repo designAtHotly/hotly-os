@@ -23,7 +23,7 @@ INSERT INTO creators (
     weekly_allowance_chars
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at
+RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at, price_500_cents, price_1000_cents
 `
 
 type CreateCreatorParams struct {
@@ -64,12 +64,14 @@ func (q *Queries) CreateCreator(ctx context.Context, arg CreateCreatorParams) (*
 		&i.WeeklyAllowanceChars,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price500Cents,
+		&i.Price1000Cents,
 	)
 	return &i, err
 }
 
 const getCreator = `-- name: GetCreator :one
-SELECT id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at
+SELECT id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at, price_500_cents, price_1000_cents
 FROM creators
 WHERE singleton = TRUE
 `
@@ -92,6 +94,8 @@ func (q *Queries) GetCreator(ctx context.Context) (*Creator, error) {
 		&i.WeeklyAllowanceChars,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price500Cents,
+		&i.Price1000Cents,
 	)
 	return &i, err
 }
@@ -104,9 +108,11 @@ SET display_name = $1,
     one_time_price_cents = $4,
     one_time_character_limit = $5,
     weekly_price_cents = $6,
+    price_500_cents = $7,
+    price_1000_cents = $8,
     updated_at = now()
 WHERE singleton = TRUE
-RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at
+RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at, price_500_cents, price_1000_cents
 `
 
 type UpdateCreatorSettingsParams struct {
@@ -116,6 +122,8 @@ type UpdateCreatorSettingsParams struct {
 	OneTimePriceCents     int64  `json:"one_time_price_cents"`
 	OneTimeCharacterLimit int32  `json:"one_time_character_limit"`
 	WeeklyPriceCents      int64  `json:"weekly_price_cents"`
+	Price500Cents         int64  `json:"price_500_cents"`
+	Price1000Cents        int64  `json:"price_1000_cents"`
 }
 
 func (q *Queries) UpdateCreatorSettings(ctx context.Context, arg UpdateCreatorSettingsParams) (*Creator, error) {
@@ -126,6 +134,8 @@ func (q *Queries) UpdateCreatorSettings(ctx context.Context, arg UpdateCreatorSe
 		arg.OneTimePriceCents,
 		arg.OneTimeCharacterLimit,
 		arg.WeeklyPriceCents,
+		arg.Price500Cents,
+		arg.Price1000Cents,
 	)
 	var i Creator
 	err := row.Scan(
@@ -143,6 +153,8 @@ func (q *Queries) UpdateCreatorSettings(ctx context.Context, arg UpdateCreatorSe
 		&i.WeeklyAllowanceChars,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price500Cents,
+		&i.Price1000Cents,
 	)
 	return &i, err
 }
@@ -164,7 +176,7 @@ ON CONFLICT (singleton) DO UPDATE
 SET user_id = EXCLUDED.user_id,
     email = EXCLUDED.email,
     updated_at = now()
-RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at
+RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at, price_500_cents, price_1000_cents
 `
 
 type UpsertCreatorUserParams struct {
@@ -203,6 +215,8 @@ func (q *Queries) UpsertCreatorUser(ctx context.Context, arg UpsertCreatorUserPa
 		&i.WeeklyAllowanceChars,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price500Cents,
+		&i.Price1000Cents,
 	)
 	return &i, err
 }

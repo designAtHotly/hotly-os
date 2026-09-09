@@ -41,7 +41,7 @@ func (p *pgRepo) CreateCheckout(ctx context.Context, kind, email, message string
 		GuestEmail:     email,
 		InitialMessage: text(message),
 		AmountCents:    amountCents,
-		CharacterLimit: int4(charLimit),
+		CharacterLimit: optionalInt4(charLimit),
 	})
 }
 
@@ -271,8 +271,10 @@ func (p *pgRepo) UpdateCreatorSettings(ctx context.Context, in CreatorSettingsIn
 		Description:           in.Description,
 		SupportItem:           in.SupportItem,
 		OneTimePriceCents:     in.OneTimePriceCents,
-		OneTimeCharacterLimit: int32(in.OneTimeCharacterLimit),
+		OneTimeCharacterLimit: limit250,
 		WeeklyPriceCents:      in.WeeklyPriceCents,
+		Price500Cents:         in.Price500Cents,
+		Price1000Cents:        in.Price1000Cents,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound

@@ -42,7 +42,7 @@ Options:
   --skip-up            Write files only; do not run docker compose
   --skip-spec          Do not exit when Docker has fewer than 2 CPUs or 4 GB RAM
   --yes                No prompts; keep existing .env; skip empty providers
-  --tag <v0.1.4>       Release tag to unpack when downloading (or HOTLY_TAG)
+  --tag <v0.1.5>       Release tag to unpack when downloading (or HOTLY_TAG)
   --github <org/repo>  GitHub repo for the tarball (or HOTLY_GITHUB)
   --dir <path>         Where a curl install unpacks (or HOTLY_ROOT). Default ~/hotly-os.
                        .env lives at <path>/.env. Not used with --local.
@@ -50,7 +50,7 @@ Options:
 Re-run to change keys. Never uses docker compose down -v.
 
 From a checkout: ./scripts/install.sh --local
-From a VPS: curl the install script and pass --tag v0.1.4 --github designAtHotly/hotly-os.
+From a VPS: curl the install script and pass --tag v0.1.5 --github designAtHotly/hotly-os.
 The tree lands in ~/hotly-os (prompt, or --dir / HOTLY_ROOT), not /tmp.
 EOF
 }
@@ -97,7 +97,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --tag | ----tag)
-      [[ -n "${2:-}" ]] || fail "--tag needs a value (e.g. v0.1.4)"
+      [[ -n "${2:-}" ]] || fail "--tag needs a value (e.g. v0.1.5)"
       TAG="$2"
       shift 2
       ;;
@@ -180,7 +180,7 @@ From a checkout of this tree:
 
 From a VPS, pin the tag:
 
-  curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.4/scripts/install.sh | bash -s -- --tag v0.1.4 --github designAtHotly/hotly-os
+  curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.5/scripts/install.sh | bash -s -- --tag v0.1.5 --github designAtHotly/hotly-os
 
 EOF
   exit 1
@@ -756,7 +756,7 @@ choose_install_dir() {
 fetch_release() {
   command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1 || educate_curl_tar
   [[ -n "$GITHUB_REPO" ]] || educate_no_release
-  [[ -n "$TAG" && "$TAG" != latest ]] || fail "Set --tag v0.1.4 (or HOTLY_TAG). Do not pin latest — that is a drifting install."
+  [[ -n "$TAG" && "$TAG" != latest ]] || fail "Set --tag v0.1.5 (or HOTLY_TAG). Do not pin latest — that is a drifting install."
   local url tmp dir pass=()
   choose_install_dir
   if [[ -f "$INSTALL_DIR/docker-compose.yml" && -f "$INSTALL_DIR/scripts/install.sh" ]]; then

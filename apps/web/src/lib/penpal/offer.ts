@@ -6,6 +6,9 @@ export interface PenpalOffer {
   support_item: SupportItem;
   one_time_price_cents: number;
   one_time_character_limit: number;
+  price_250_cents: number;
+  price_500_cents: number;
+  price_1000_cents: number;
   weekly_price_cents: number;
   weekly_allowance_chars: number;
   currency: "usd";

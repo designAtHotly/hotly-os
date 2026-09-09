@@ -2,7 +2,7 @@
 
 Self-hosted Hotly for exactly one creator. Operators build images from source. The project does not publish prebuilt images, register DNS, or provision certificates.
 
-This file is the runbook for this repository. Operators pin GitHub Release tag `v0.1.4`, not a drifting `main`.
+This file is the runbook for this repository. Operators pin GitHub Release tag `v0.1.5`, not a drifting `main`.
 
 ## What you supply
 
@@ -53,7 +53,7 @@ That last line is `docker compose` with a space. The old `docker-compose` (hyphe
 Then:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.4/scripts/install.sh | bash -s -- --tag v0.1.4 --github designAtHotly/hotly-os
+curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.5/scripts/install.sh | bash -s -- --tag v0.1.5 --github designAtHotly/hotly-os
 ```
 
 That unpacks to **`~/hotly-os`** (prompt, or `--dir` / `HOTLY_ROOT`). `.env` is `$HOME/hotly-os/.env`. Answer the prompts: public URL (`https://your.domain.example`, not a raw IP), creator email/name, then Firebase / Stripe / SendGrid or skip. For a public hostname it adds `docker-compose.prod.yml` (only 80/443 published) and does not `down -v`. Confirm `GET https://your.domain.example/api/health`.
@@ -135,13 +135,13 @@ It does not replay Stripe events or SendGrid mail. Checkout sessions that comple
 
 ## Upgrade
 
-Check out a **GitHub Release tag** (`v0.1.4`, not a drifting `main`) and rebuild. There are no published images to pull. Tags are cut manually; the `release` workflow creates the GitHub Release after CI on that tag passes.
+Check out a **GitHub Release tag** (`v0.1.5`, not a drifting `main`) and rebuild. There are no published images to pull. Tags are cut manually; the `release` workflow creates the GitHub Release after CI on that tag passes.
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 ```
 
-Migrations run before the new API serves traffic. Confirm `GET /api/health` and a manual reload of `/penpal`, `/creator/inbox`, and `/dome`.
+Migrations run before the new API serves traffic. `v0.1.5` adds `price_500_cents` and `price_1000_cents` (defaults $10 / $15) so `/penpal` shows Drip / Latte / Cold Brew / Custom. Existing `.env` files do not need new keys; creator settings persist the ladder. Confirm `GET /api/health` and a manual reload of `/penpal`, `/creator/inbox`, and `/dome`.
 
 Rollback: keep the previous copy of the tree and rebuild it. Down migrations exist under `db/migrations/*.down.sql` but payment, media, and Dome rows are not automatically rewound. Do not `migrate down` on a live database unless you understand that data loss.
 

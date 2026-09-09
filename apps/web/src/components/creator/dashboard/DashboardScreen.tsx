@@ -1,34 +1,41 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Inter } from "next/font/google";
-import { SortOption, TabOption } from "@/types/dashboard.types";
-import { ThreadCard } from "./ThreadCard";
-import { TabsBar } from "./TabsBar";
-import { EmptyState } from "./EmptyState";
-import { CompletionCard } from "./CompletionCard";
-import { DashboardHeader } from "./DashboardHeader";
-import SettingsModal from "./SettingsModal";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+
+import type {
+  ApiCreatorChat,
+  AuthCreator,
+  ChatAttachmentRequest} from "@/lib/api";
 import {
   replyToMessage,
   fetchCreatorDashboard,
-  fetchCreatorPricing,
-  ApiCreatorChat,
-  AuthCreator,
-  ChatAttachmentRequest,
+  fetchCreatorPricing
 } from "@/lib/api";
 import { blockChat, unblockChat } from "@/lib/api/chat";
-import { CreatorPricing, SupportTheme } from "@/types/coffee.types";
 import { captureError } from "@/lib/utils/error-handler";
-import { toastError } from "@/lib/utils/toast";
-import { getBadgeLabel, getPluralLabel, DEFAULT_VARIANT } from "@/lib/utils/variant";
 import { getCreatorVariantShareUrl } from "@/lib/utils/page-helper";
+import { toastError } from "@/lib/utils/toast";
+import {
+  getBadgeLabel,
+  getPluralLabel,
+  DEFAULT_VARIANT,
+} from "@/lib/utils/variant";
+import type { CreatorPricing, SupportTheme } from "@/types/coffee.types";
+import type { SortOption, TabOption } from "@/types/dashboard.types";
+
+import { CompletionCard } from "./CompletionCard";
+import { DashboardHeader } from "./DashboardHeader";
+import { EmptyState } from "./EmptyState";
+import SettingsModal from "./SettingsModal";
+import { TabsBar } from "./TabsBar";
+import { ThreadCard } from "./ThreadCard";
 
 const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
   display: "swap",
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
 });
 
 interface PenpalDashboardScreenProps {
@@ -44,11 +51,13 @@ export function PenpalDashboardScreen({
   hideHeader = false,
   embedded = false,
 }: PenpalDashboardScreenProps) {
-  const [supportTheme, setSupportTheme] = useState(creator.support_theme || "coffee");
+  const [supportTheme, setSupportTheme] = useState(
+    creator.support_theme || "coffee"
+  );
   const [displayName, setDisplayName] = useState(creator.name || "");
   const [description, setDescription] = useState(creator.bio || "");
   const chatAttachmentPolicy = creator.chat_attachment_policy || "none";
-  const variant = creator.variant || DEFAULT_VARIANT
+  const variant = creator.variant || DEFAULT_VARIANT;
   const badgeLabel = getBadgeLabel(variant);
 
   // Data - chats with last message
@@ -84,8 +93,11 @@ export function PenpalDashboardScreen({
         setChats(response.body.chats || []);
       }
       setPricing(creatorPricing);
-    } catch (err) {
-      captureError(err, { action: 'load_dashboard', component: 'PenpalDashboardScreen' });
+    } catch (error) {
+      captureError(error, {
+        action: "load_dashboard",
+        component: "PenpalDashboardScreen",
+      });
     } finally {
       setLoading(false);
     }
@@ -93,21 +105,22 @@ export function PenpalDashboardScreen({
 
   // Helper to check if chat needs reply (last message is from fan, not creator)
   const chatNeedsReply = useCallback((chat: ApiCreatorChat) => {
-    if (!chat.last_message_uuid) return false;
+    if (!chat.last_message_uuid) {return false;}
     return chat.last_message_sender_id === chat.fan_user_id;
   }, []);
 
   // Filter and sort chats by tab
   const sortedChats = useMemo(() => {
-    const unblocked = (chats || []).filter(c => !c.blocked_at);
-    const blocked = (chats || []).filter(c => !!c.blocked_at);
+    const unblocked = (chats || []).filter((c) => !c.blocked_at);
+    const blocked = (chats || []).filter((c) => !!c.blocked_at);
 
     // Filter by tab first
-    const filtered = activeTab === "needs-reply"
-      ? unblocked.filter(chatNeedsReply)
-      : activeTab === "blocked"
-        ? blocked
-        : unblocked;
+    const filtered =
+      activeTab === "needs-reply"
+        ? unblocked.filter(chatNeedsReply)
+        : (activeTab === "blocked"
+          ? blocked
+          : unblocked);
 
     // Default sort: needs-reply = oldest first (longest waiting), all = newest first
     const defaultSort = activeTab === "needs-reply" ? "oldest" : "newest";
@@ -118,83 +131,131 @@ export function PenpalDashboardScreen({
       const bUpdated = b.updated_at ? new Date(b.updated_at).getTime() : 0;
 
       switch (effectiveSort) {
-        case "newest": return bUpdated - aUpdated;
-        case "oldest": return aUpdated - bUpdated;
+        case "newest": {
+          return bUpdated - aUpdated;
+        }
+        case "oldest": {
+          return aUpdated - bUpdated;
+        }
         case "highest-tip":
-        case "lowest-tip":
+        case "lowest-tip": {
           return effectiveSort === "highest-tip"
             ? (b.total_paid_cents || 0) - (a.total_paid_cents || 0)
             : (a.total_paid_cents || 0) - (b.total_paid_cents || 0);
-        case "most-given": return (b.total_paid_cents || 0) - (a.total_paid_cents || 0);
-        case "least-given": return (a.total_paid_cents || 0) - (b.total_paid_cents || 0);
-        case "penpals-first":
+        }
+        case "most-given": {
+          return (b.total_paid_cents || 0) - (a.total_paid_cents || 0);
+        }
+        case "least-given": {
+          return (a.total_paid_cents || 0) - (b.total_paid_cents || 0);
+        }
+        case "penpals-first": {
           // Penpals first, then by oldest first within each group
           if (a.is_subscriber !== b.is_subscriber) {
             return a.is_subscriber ? -1 : 1;
           }
           return aUpdated - bUpdated;
-        default:
+        }
+        default: {
           // Fallback based on tab
-          return activeTab === "needs-reply" ? aUpdated - bUpdated : bUpdated - aUpdated;
+          return activeTab === "needs-reply"
+            ? aUpdated - bUpdated
+            : bUpdated - aUpdated;
+        }
       }
     });
   }, [chats, sortBy, activeTab, chatNeedsReply]);
 
   // Count chats that need reply / are blocked
-  const needsReplyCount = (chats || []).filter(c => !c.blocked_at && chatNeedsReply(c)).length;
-  const blockedCount = (chats || []).filter(c => !!c.blocked_at).length;
-  const blockedUnrepliedCount = (chats || []).filter(c => !!c.blocked_at && chatNeedsReply(c)).length;
-
+  const needsReplyCount = (chats || []).filter(
+    (c) => !c.blocked_at && chatNeedsReply(c)
+  ).length;
+  const blockedCount = (chats || []).filter((c) => !!c.blocked_at).length;
+  const blockedUnrepliedCount = (chats || []).filter(
+    (c) => !!c.blocked_at && chatNeedsReply(c)
+  ).length;
 
   // Reply handler - called from ThreadCard with message content
-  const handleSendReply = useCallback(async (messageUuid: string, fanUserId: number, content: string, attachments?: ChatAttachmentRequest[], priceInCents?: number, priceCurrencyCode?: string): Promise<boolean> => {
-    const isLastOne = needsReplyCount === 1;
+  const handleSendReply = useCallback(
+    async (
+      messageUuid: string,
+      fanUserId: number,
+      content: string,
+      attachments?: ChatAttachmentRequest[],
+      priceInCents?: number,
+      priceCurrencyCode?: string
+    ): Promise<boolean> => {
+      const isLastOne = needsReplyCount === 1;
 
-    try {
-      const response = await replyToMessage(messageUuid, content, attachments, priceInCents, priceCurrencyCode);
+      try {
+        const response = await replyToMessage(
+          messageUuid,
+          content,
+          attachments,
+          priceInCents,
+          priceCurrencyCode
+        );
 
-      if (response.body) {
-        const replied = response.body;
-        setRepliedCount(prev => prev + 1);
-        // Update the chat to reflect the reply (instead of removing it)
-        setChats(prev => prev.map(c => {
-          if (c.fan_user_id !== fanUserId) return c;
-          const now = new Date().toISOString();
-          return {
-            ...c,
-            last_message_sender_id: creator.user_id,
-            last_message_content: content,
-            last_message_created_at: now,
-            updated_at: now,
-            last_message_attachments: replied.attachments,
-          };
-        }));
-        if (isLastOne) setShowCompletionCard(true);
-        return true;
+        if (response.body) {
+          const replied = response.body;
+          setRepliedCount((prev) => prev + 1);
+          // Update the chat to reflect the reply (instead of removing it)
+          setChats((prev) =>
+            prev.map((c) => {
+              if (c.fan_user_id !== fanUserId) {return c;}
+              const now = new Date().toISOString();
+              return {
+                ...c,
+                last_message_attachments: replied.attachments,
+                last_message_content: content,
+                last_message_created_at: now,
+                last_message_sender_id: creator.user_id,
+                updated_at: now,
+              };
+            })
+          );
+          if (isLastOne) {setShowCompletionCard(true);}
+          return true;
+        }
+        toastError("Failed to send reply. Please try again.");
+        return false;
+      } catch (error) {
+        captureError(error, {
+          action: "reply_to_message",
+          component: "PenpalDashboardScreen",
+        });
+        toastError("Failed to send reply. Please try again.");
+        return false;
       }
-      toastError("Failed to send reply. Please try again.");
-      return false;
-    } catch (err) {
-      captureError(err, { action: 'reply_to_message', component: 'PenpalDashboardScreen' });
-      toastError("Failed to send reply. Please try again.");
-      return false;
-    }
-  }, [needsReplyCount, creator.user_id]);
+    },
+    [needsReplyCount, creator.user_id]
+  );
 
-  const handleBlockChat = useCallback(async (chatId: number, chatUuid: string) => {
-    await blockChat(chatUuid);
-    setChats(prev => prev.map(c => c.id === chatId ? { ...c, blocked_at: new Date().toISOString() } : c));
-  }, []);
+  const handleBlockChat = useCallback(
+    async (chatId: number, chatUuid: string) => {
+      await blockChat(chatUuid);
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === chatId ? { ...c, blocked_at: new Date().toISOString() } : c
+        )
+      );
+    },
+    []
+  );
 
-  const handleUnblockChat = useCallback(async (chatId: number, chatUuid: string) => {
-    await unblockChat(chatUuid);
-    setChats(prev => prev.map(c => c.id === chatId ? { ...c, blocked_at: null } : c));
-  }, []);
-
+  const handleUnblockChat = useCallback(
+    async (chatId: number, chatUuid: string) => {
+      await unblockChat(chatUuid);
+      setChats((prev) =>
+        prev.map((c) => (c.id === chatId ? { ...c, blocked_at: null } : c))
+      );
+    },
+    []
+  );
 
   // Hide completion card when new chats come in
   useEffect(() => {
-    if (chats.length > 0) setShowCompletionCard(false);
+    if (chats.length > 0) {setShowCompletionCard(false);}
   }, [chats.length]);
 
   // Auto-select first card in needs-reply tab
@@ -222,26 +283,37 @@ export function PenpalDashboardScreen({
 
   // Utilities
   const getShareLink = () => {
-    if (typeof window === "undefined") return "";
+    if (typeof window === "undefined") {return "";}
     return getCreatorVariantShareUrl(creator.username, variant);
   };
 
   if (loading) {
     return (
-      <div className={`w-full ${embedded ? "" : "min-h-[100dvh]"} bg-[#faf8f5] flex items-center justify-center`}>
+      <div
+        className={`w-full ${embedded ? "" : "min-h-[100dvh]"} flex items-center justify-center bg-[#faf8f5]`}
+      >
         <div className="text-gray-400">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className={`${inter.variable} w-full ${embedded ? "" : "min-h-[100dvh] bg-[#faf8f5]"}`} style={{ fontFamily: "var(--font-sans)" }}>
-      <div className={`max-w-2xl mx-auto ${embedded ? "px-4 pt-6 md:px-6 md:pt-8" : "px-4 py-6 md:px-6 md:py-8"}`}>
-
+    <div
+      className={`${inter.variable} w-full ${embedded ? "" : "min-h-[100dvh] bg-[#faf8f5]"}`}
+      style={{ fontFamily: "var(--font-sans)" }}
+    >
+      <div
+        className={`mx-auto max-w-2xl ${embedded ? "px-4 pt-6 md:px-6 md:pt-8" : "px-4 py-6 md:px-6 md:py-8"}`}
+      >
         {/* Header — hidden on mobile when embedded (shell header covers it) */}
         {!hideHeader && (
           <div className={embedded ? "hidden lg:block" : ""}>
-            <DashboardHeader shareLink={getShareLink()} onLogout={onLogout} variant={variant} onOpenSettings={() => setShowSettingsModal(true)} />
+            <DashboardHeader
+              shareLink={getShareLink()}
+              onLogout={onLogout}
+              variant={variant}
+              onOpenSettings={() => setShowSettingsModal(true)}
+            />
           </div>
         )}
 
@@ -303,7 +375,16 @@ export function PenpalDashboardScreen({
         displayName={displayName}
         description={description}
         supportTheme={(supportTheme as SupportTheme) || "coffee"}
-        pricing={pricing ?? { currencyCode: "usd", price_250: 500, price_500: 500, price_1000: 500, weekly_price_cents: 1500, character_limit: 250 }}
+        pricing={
+          pricing ?? {
+            character_limit: 250,
+            currencyCode: "usd",
+            price_1000: 1500,
+            price_250: 500,
+            price_500: 1000,
+            weekly_price_cents: 1500,
+          }
+        }
         onSaved={(updates) => {
           setDisplayName(updates.displayName);
           setDescription(updates.description);

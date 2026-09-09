@@ -81,13 +81,15 @@ func (h *Handler) creatorSettings(w http.ResponseWriter, req *http.Request) {
 }
 
 type patchSettingsRequest struct {
-	DisplayName           string `json:"display_name"`
-	Description           string `json:"description"`
-	SupportItem           string `json:"support_item"`
-	OneTimePriceCents     int64  `json:"one_time_price_cents"`
-	OneTimeCharacterLimit int    `json:"one_time_character_limit"`
-	WeeklyPriceCents      int64  `json:"weekly_price_cents"`
-	Currency              string `json:"currency"`
+	DisplayName       string `json:"display_name"`
+	Description       string `json:"description"`
+	SupportItem       string `json:"support_item"`
+	OneTimePriceCents int64  `json:"one_time_price_cents"`
+	Price250Cents     int64  `json:"price_250_cents"`
+	Price500Cents     int64  `json:"price_500_cents"`
+	Price1000Cents    int64  `json:"price_1000_cents"`
+	WeeklyPriceCents  int64  `json:"weekly_price_cents"`
+	Currency          string `json:"currency"`
 }
 
 func (h *Handler) patchCreatorSettings(w http.ResponseWriter, req *http.Request) {
@@ -100,13 +102,18 @@ func (h *Handler) patchCreatorSettings(w http.ResponseWriter, req *http.Request)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "usd_only", "message": "Prices are USD only."})
 		return
 	}
+	price250 := body.Price250Cents
+	if price250 <= 0 {
+		price250 = body.OneTimePriceCents
+	}
 	offer, err := h.svc.UpdateSettings(req.Context(), CreatorSettingsInput{
-		DisplayName:           body.DisplayName,
-		Description:           body.Description,
-		SupportItem:           body.SupportItem,
-		OneTimePriceCents:     body.OneTimePriceCents,
-		OneTimeCharacterLimit: body.OneTimeCharacterLimit,
-		WeeklyPriceCents:      body.WeeklyPriceCents,
+		DisplayName:       body.DisplayName,
+		Description:       body.Description,
+		SupportItem:       body.SupportItem,
+		OneTimePriceCents: price250,
+		Price500Cents:     body.Price500Cents,
+		Price1000Cents:    body.Price1000Cents,
+		WeeklyPriceCents:  body.WeeklyPriceCents,
 	})
 	if err != nil {
 		switch {
@@ -123,11 +130,13 @@ func (h *Handler) patchCreatorSettings(w http.ResponseWriter, req *http.Request)
 }
 
 type checkoutRequest struct {
-	Email     string `json:"email"`
-	Message   string `json:"message"`
-	Recurring bool   `json:"recurring"`
-	Amount    int64  `json:"amount"`
-	Currency  string `json:"currency"`
+	Email             string `json:"email"`
+	Message           string `json:"message"`
+	Recurring         bool   `json:"recurring"`
+	Amount            int64  `json:"amount"`
+	Currency          string `json:"currency"`
+	Tier              string `json:"tier"`
+	CustomAmountCents int64  `json:"custom_amount_cents"`
 }
 
 func (h *Handler) checkout(w http.ResponseWriter, req *http.Request) {
@@ -137,9 +146,11 @@ func (h *Handler) checkout(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	url, err := h.svc.StartCheckout(req.Context(), CheckoutInput{
-		Email:     body.Email,
-		Message:   body.Message,
-		Recurring: body.Recurring,
+		Email:             body.Email,
+		Message:           body.Message,
+		Recurring:         body.Recurring,
+		Tier:              body.Tier,
+		CustomAmountCents: body.CustomAmountCents,
 	})
 	if err != nil {
 		writeCheckoutError(w, err)
@@ -160,6 +171,8 @@ func writeCheckoutError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "message_too_long", "message": "That note is over the character limit."})
 	case errors.Is(err, ErrCreatorEmail):
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "creator_email", "message": "Use a guest email for Checkout."})
+	case errors.Is(err, ErrInvalidTier):
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_tier", "message": "Choose a valid note size or a custom amount above the top tier."})
 	default:
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal_error"})
 	}

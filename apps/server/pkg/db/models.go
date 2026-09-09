@@ -66,6 +66,8 @@ type Creator struct {
 	WeeklyAllowanceChars  int32              `json:"weekly_allowance_chars"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Price500Cents         int64              `json:"price_500_cents"`
+	Price1000Cents        int64              `json:"price_1000_cents"`
 }
 
 type DomeMembership struct {

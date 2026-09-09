@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreatorPricing, SupportTheme, capitalize, getThemeEmoji } from "@/types/coffee.types";
+
 import { updateCreatorProfile } from "@/lib/api/creator";
 import { uploadCreatorAvatar } from "@/lib/api/oss";
 import { captureError } from "@/lib/utils/error-handler";
 import { toastError, toastSuccess } from "@/lib/utils/toast";
+import type {
+  CreatorPricing,
+  SupportTheme} from "@/types/coffee.types";
+import {
+  capitalize,
+  getThemeEmoji,
+} from "@/types/coffee.types";
 
 const THEMES: SupportTheme[] = ["coffee", "cocktail", "lemonade"];
 
@@ -39,10 +46,12 @@ export default function SettingsModal({
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(displayName);
   const [bio, setBio] = useState(description);
-  const [selectedTheme, setSelectedTheme] = useState<SupportTheme>(supportTheme);
+  const [selectedTheme, setSelectedTheme] =
+    useState<SupportTheme>(supportTheme);
   const [oneTime, setOneTime] = useState("");
+  const [price500, setPrice500] = useState("");
+  const [price1000, setPrice1000] = useState("");
   const [weekly, setWeekly] = useState("");
-  const [charLimit, setCharLimit] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -50,8 +59,9 @@ export default function SettingsModal({
       setBio(description);
       setSelectedTheme(supportTheme);
       setOneTime(((pricing.price_250 || 0) / 100).toString());
+      setPrice500(((pricing.price_500 || 0) / 100).toString());
+      setPrice1000(((pricing.price_1000 || 0) / 100).toString());
       setWeekly(((pricing.weekly_price_cents || 0) / 100).toString());
-      setCharLimit(String(pricing.character_limit || 250));
       requestAnimationFrame(() => setIsVisible(true));
     } else {
       setIsVisible(false);
@@ -72,28 +82,40 @@ export default function SettingsModal({
   }, [isOpen, saving, onClose]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !saving) onClose();
+    if (e.target === e.currentTarget && !saving) {onClose();}
   };
 
   const handleSave = async () => {
-    const oneTimeCents = Math.round(parseFloat(oneTime) * 100);
-    const weeklyCents = Math.round(parseFloat(weekly) * 100);
-    const limit = parseInt(charLimit, 10);
-    if (!name.trim() || !oneTimeCents || !weeklyCents || oneTimeCents <= 0 || weeklyCents <= 0 || !limit || limit <= 0) {
-      toastError("Enter a name and positive USD prices.");
+    const oneTimeCents = Math.round(Number.parseFloat(oneTime) * 100);
+    const price500Cents = Math.round(Number.parseFloat(price500) * 100);
+    const price1000Cents = Math.round(Number.parseFloat(price1000) * 100);
+    const weeklyCents = Math.round(Number.parseFloat(weekly) * 100);
+    const pricesOk =
+      oneTimeCents > 0 &&
+      price500Cents > 0 &&
+      price1000Cents > 0 &&
+      weeklyCents > 0 &&
+      oneTimeCents <= price500Cents &&
+      price500Cents <= price1000Cents;
+    if (!name.trim() || !pricesOk) {
+      toastError(
+        "Enter a name and a USD ladder (250 ≤ 500 ≤ 1000 characters)."
+      );
       return;
     }
 
     setSaving(true);
     try {
       const result = await updateCreatorProfile({
-        display_name: name.trim(),
-        description: bio.trim(),
-        support_item: selectedTheme,
-        one_time_price_cents: oneTimeCents,
-        one_time_character_limit: limit,
-        weekly_price_cents: weeklyCents,
         currency: "usd",
+        description: bio.trim(),
+        display_name: name.trim(),
+        one_time_price_cents: oneTimeCents,
+        price_1000_cents: price1000Cents,
+        price_250_cents: oneTimeCents,
+        price_500_cents: price500Cents,
+        support_item: selectedTheme,
+        weekly_price_cents: weeklyCents,
       });
 
       if (result.status && result.status >= 400) {
@@ -102,30 +124,33 @@ export default function SettingsModal({
       }
 
       onSaved({
-        displayName: name.trim(),
         description: bio.trim(),
-        supportTheme: selectedTheme,
+        displayName: name.trim(),
         pricing: {
+          character_limit: 250,
           currencyCode: "usd",
+          price_1000: price1000Cents,
           price_250: oneTimeCents,
-          price_500: oneTimeCents,
-          price_1000: oneTimeCents,
-          character_limit: limit,
-          weekly_price_cents: weeklyCents,
+          price_500: price500Cents,
           weekly_allowance_chars: 2000,
+          weekly_price_cents: weeklyCents,
         },
+        supportTheme: selectedTheme,
       });
       toastSuccess("Updated");
       onClose();
-    } catch (err) {
-      captureError(err, { action: "save_settings", component: "SettingsModal" });
+    } catch (error) {
+      captureError(error, {
+        action: "save_settings",
+        component: "SettingsModal",
+      });
       toastError("Failed to update");
     } finally {
       setSaving(false);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div
@@ -138,8 +163,10 @@ export default function SettingsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className={`w-full max-w-[420px] bg-white rounded-[24px] overflow-hidden relative max-h-[90dvh] overflow-y-auto transition-all duration-250 ${
-          isVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-5"
+        className={`relative max-h-[90dvh] w-full max-w-[420px] overflow-hidden overflow-y-auto rounded-[24px] bg-white transition-all duration-250 ${
+          isVisible
+            ? "translate-y-0 scale-100 opacity-100"
+            : "translate-y-5 scale-95 opacity-0"
         }`}
         style={{ boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)" }}
       >
@@ -150,19 +177,37 @@ export default function SettingsModal({
           aria-label="Close settings"
           className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-600 disabled:opacity-50"
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
             <path d="M1 1l12 12M13 1L1 13" />
           </svg>
         </button>
 
         <div className="px-6 pt-6 pb-4">
-          <h2 id="settings-title" className="text-lg font-semibold text-stone-900">Settings</h2>
-          <p className="mt-0.5 text-sm text-stone-500">Name, description, USD prices, and support item</p>
+          <h2
+            id="settings-title"
+            className="text-lg font-semibold text-stone-900"
+          >
+            Settings
+          </h2>
+          <p className="mt-0.5 text-sm text-stone-500">
+            Name, description, USD note sizes, and support item
+          </p>
         </div>
 
         <div className="space-y-5 px-6 pb-5">
           <div>
-            <label htmlFor="settings-name" className="mb-2 block text-sm font-medium text-stone-700">
+            <label
+              htmlFor="settings-name"
+              className="mb-2 block text-sm font-medium text-stone-700"
+            >
               Display name
             </label>
             <input
@@ -170,12 +215,15 @@ export default function SettingsModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
-              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:border-transparent focus:ring-2 focus:ring-amber-400 focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="settings-avatar" className="mb-2 block text-sm font-medium text-stone-700">
+            <label
+              htmlFor="settings-avatar"
+              className="mb-2 block text-sm font-medium text-stone-700"
+            >
               Photo
             </label>
             <input
@@ -186,7 +234,7 @@ export default function SettingsModal({
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 e.target.value = "";
-                if (!file) return;
+                if (!file) {return;}
                 if (file.size > 3 * 1024 * 1024) {
                   toastError("Photos must be 3MB or smaller.");
                   return;
@@ -194,18 +242,26 @@ export default function SettingsModal({
                 try {
                   await uploadCreatorAvatar(file);
                   toastSuccess("Photo updated");
-                } catch (err) {
-                  captureError(err, { action: "upload_avatar", component: "SettingsModal" });
+                } catch (error) {
+                  captureError(error, {
+                    action: "upload_avatar",
+                    component: "SettingsModal",
+                  });
                   toastError("Could not update photo.");
                 }
               }}
               className="block w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-amber-800"
             />
-            <p className="mt-1 text-xs text-stone-400">JPEG, PNG, WebP, or GIF. 3MB max.</p>
+            <p className="mt-1 text-xs text-stone-400">
+              JPEG, PNG, WebP, or GIF. 3MB max.
+            </p>
           </div>
 
           <div>
-            <label htmlFor="settings-bio" className="mb-2 block text-sm font-medium text-stone-700">
+            <label
+              htmlFor="settings-bio"
+              className="mb-2 block text-sm font-medium text-stone-700"
+            >
               Description
             </label>
             <textarea
@@ -214,12 +270,14 @@ export default function SettingsModal({
               onChange={(e) => setBio(e.target.value)}
               maxLength={2000}
               rows={3}
-              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:border-transparent focus:ring-2 focus:ring-amber-400 focus:outline-none"
             />
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-medium text-stone-700">Support item</p>
+            <p className="mb-2 text-sm font-medium text-stone-700">
+              Support item
+            </p>
             <div className="grid grid-cols-3 gap-1.5">
               {THEMES.map((theme) => (
                 <button
@@ -240,44 +298,84 @@ export default function SettingsModal({
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-medium text-stone-700">USD prices</p>
+            <p className="mb-2 text-sm font-medium text-stone-700">
+              USD prices
+            </p>
             <div className="space-y-2">
               <label className="flex items-center gap-3">
-                <span className="w-32 shrink-0 text-xs text-stone-500">One-time note</span>
+                <span className="w-32 shrink-0 text-xs text-stone-500">
+                  250 characters
+                </span>
                 <span className="text-sm text-stone-400">$</span>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={oneTime}
                   onChange={(e) => {
-                    if (e.target.value === "" || /^\d+\.?\d{0,2}$/.test(e.target.value)) setOneTime(e.target.value);
+                    if (
+                      e.target.value === "" ||
+                      /^\d+\.?\d{0,2}$/.test(e.target.value)
+                    )
+                      {setOneTime(e.target.value);}
                   }}
-                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:ring-2 focus:ring-amber-400 focus:outline-none"
                 />
               </label>
               <label className="flex items-center gap-3">
-                <span className="w-32 shrink-0 text-xs text-stone-500">Weekly Penpal</span>
+                <span className="w-32 shrink-0 text-xs text-stone-500">
+                  500 characters
+                </span>
+                <span className="text-sm text-stone-400">$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={price500}
+                  onChange={(e) => {
+                    if (
+                      e.target.value === "" ||
+                      /^\d+\.?\d{0,2}$/.test(e.target.value)
+                    )
+                      {setPrice500(e.target.value);}
+                  }}
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                />
+              </label>
+              <label className="flex items-center gap-3">
+                <span className="w-32 shrink-0 text-xs text-stone-500">
+                  1,000 characters
+                </span>
+                <span className="text-sm text-stone-400">$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={price1000}
+                  onChange={(e) => {
+                    if (
+                      e.target.value === "" ||
+                      /^\d+\.?\d{0,2}$/.test(e.target.value)
+                    )
+                      {setPrice1000(e.target.value);}
+                  }}
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                />
+              </label>
+              <label className="flex items-center gap-3">
+                <span className="w-32 shrink-0 text-xs text-stone-500">
+                  Weekly Penpal
+                </span>
                 <span className="text-sm text-stone-400">$</span>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={weekly}
                   onChange={(e) => {
-                    if (e.target.value === "" || /^\d+\.?\d{0,2}$/.test(e.target.value)) setWeekly(e.target.value);
+                    if (
+                      e.target.value === "" ||
+                      /^\d+\.?\d{0,2}$/.test(e.target.value)
+                    )
+                      {setWeekly(e.target.value);}
                   }}
-                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-              </label>
-              <label className="flex items-center gap-3">
-                <span className="w-32 shrink-0 text-xs text-stone-500">Note character limit</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={charLimit}
-                  onChange={(e) => {
-                    if (e.target.value === "" || /^\d+$/.test(e.target.value)) setCharLimit(e.target.value);
-                  }}
-                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:ring-2 focus:ring-amber-400 focus:outline-none"
                 />
               </label>
             </div>
@@ -289,7 +387,7 @@ export default function SettingsModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full rounded-2xl py-3 text-[15px] font-semibold text-white transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none"
+            className="w-full rounded-2xl py-3 text-[15px] font-semibold text-white transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98] disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               background: "linear-gradient(145deg, #fbbf24, #f59e0b)",
               boxShadow: "0 2px 12px rgba(245, 158, 11, 0.2)",

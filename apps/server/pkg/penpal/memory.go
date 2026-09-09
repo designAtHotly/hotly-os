@@ -191,7 +191,12 @@ func (m *Mem) UpsertCreatorUser(_ context.Context, email, displayName, supportIt
 	defer m.mu.Unlock()
 	m.creator = &auth.CreatorRow{UserID: userID, Linked: true}
 	if m.creatorRow == nil {
-		m.creatorRow = &db.Creator{Singleton: true, WeeklyAllowanceChars: 2000}
+		m.creatorRow = &db.Creator{
+			Singleton:            true,
+			WeeklyAllowanceChars: 2000,
+			Price500Cents:        defaultPrice500Cents,
+			Price1000Cents:       defaultPrice1000Cents,
+		}
 	}
 	m.creatorRow.Email = email
 	if displayName != "" {
@@ -287,7 +292,7 @@ func (m *Mem) CreateCheckout(_ context.Context, kind, email, message string, amo
 		InitialMessage: text(message),
 		AmountCents:    amountCents,
 		Currency:       "usd",
-		CharacterLimit: int4(charLimit),
+		CharacterLimit: optionalInt4(charLimit),
 		CreatedAt:      pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 	}
 	m.checkouts[id] = row
@@ -830,7 +835,9 @@ func (m *Mem) UpdateCreatorSettings(_ context.Context, in CreatorSettingsInput) 
 	m.creatorRow.Description = in.Description
 	m.creatorRow.SupportItem = in.SupportItem
 	m.creatorRow.OneTimePriceCents = in.OneTimePriceCents
-	m.creatorRow.OneTimeCharacterLimit = int32(in.OneTimeCharacterLimit)
+	m.creatorRow.OneTimeCharacterLimit = limit250
+	m.creatorRow.Price500Cents = in.Price500Cents
+	m.creatorRow.Price1000Cents = in.Price1000Cents
 	m.creatorRow.WeeklyPriceCents = in.WeeklyPriceCents
 	cp := *m.creatorRow
 	return &cp, nil

@@ -1,18 +1,20 @@
-import { BrandVariant } from "@/lib/utils/variant";
+import type { BrandVariant } from "@/lib/utils/variant";
+
+export type OneTimeTierKey = "250" | "500" | "1000" | "custom";
 
 export interface CoffeeTier {
   id: number;
+  key: OneTimeTierKey;
   name: string;
   price_in_cents: number; // in cents (price * 100)
-  char_limit: number; // undefined = no limit
+  char_limit: number; // 0 = no limit
   is_custom?: boolean; // true if this is the "Custom" tier where users can enter their own amount
 }
 
-
 export interface CreatorPricing {
-  price_250: number
-  price_500: number
-  price_1000: number
+  price_250: number;
+  price_500: number;
+  price_1000: number;
   currencyCode: string;
   character_limit?: number;
   weekly_price_cents?: number;
@@ -21,16 +23,16 @@ export interface CreatorPricing {
 
 export const DEFAULT_PRICING: CreatorPricing = {
   currencyCode: "usd",
+  price_1000: 1500,
   price_250: 500,
   price_500: 1000,
-  price_1000: 1500,
-}
+};
 
 export const getMinCustomAmount = (pricing: CreatorPricing): number => {
   if (pricing.currencyCode == "ngn") {
-    return pricing.price_1000 + (1000 * 100)
+    return pricing.price_1000 + 1000 * 100;
   }
-  return pricing.price_1000 + 100
+  return pricing.price_1000 + 100;
 };
 
 export interface ChargeAmount {
@@ -40,58 +42,97 @@ export interface ChargeAmount {
 }
 
 /** Resolves the actual amount and currency to send to Stripe (converts NGN → USD if needed) */
-export function getStripeCharge(charge: ChargeAmount): { amount: number; currency_code: string } {
+export function getStripeCharge(charge: ChargeAmount): {
+  amount: number;
+  currency_code: string;
+} {
   return {
     amount: charge.usd_equivalent ?? charge.price_in_cents,
-    currency_code: charge.usd_equivalent != null ? "usd" : charge.currency_code,
+    currency_code: charge.usd_equivalent == null ? charge.currency_code : "usd",
   };
 }
 
 export function getChargeAmount(
   pricing: CreatorPricing,
   selectedTier: CoffeeTier,
-  customAmountCents?: number,
+  customAmountCents?: number
 ): ChargeAmount {
   const price_in_cents = selectedTier.is_custom
     ? customAmountCents || 0
     : selectedTier.price_in_cents;
 
   const result: ChargeAmount = {
-    price_in_cents,
     currency_code: pricing.currencyCode,
+    price_in_cents,
   };
 
   // Calculate USD equivalent for NGN currency
   if (pricing.currencyCode.toLowerCase() === "ngn") {
-    if (!selectedTier.is_custom) {
+    if (selectedTier.is_custom) {
+      result.usd_equivalent = Math.round(ngnToUsd(price_in_cents));
+    } else {
       // to make sure if its not custom then user dont see decimal
       result.usd_equivalent = Math.round(ngnToUsd(price_in_cents) / 100) * 100;
-    } else {
-      result.usd_equivalent = Math.round(ngnToUsd(price_in_cents));
-
     }
   }
 
   return result;
 }
 
-export const getPricingTiers = (tip: SupportTheme, pricing: CreatorPricing): CoffeeTier[] => {
-  const productNames: Record<SupportTheme, string> = {
-    coffee: "Coffee",
-    cocktail: "Cocktail",
-    lemonade: "Lemonade",
+export const getPricingTiers = (
+  tip: SupportTheme,
+  pricing: CreatorPricing
+): CoffeeTier[] => {
+  const { price_250, price_500, price_1000 } = pricing;
+  const productNames: Record<number, Record<SupportTheme, string>> = {
+    1000: {
+      cocktail: "Tequila",
+      coffee: "Cold Brew",
+      lemonade: "Pitcher",
+    },
+    250: {
+      cocktail: "Whiskey",
+      coffee: "Drip",
+      lemonade: "Sip",
+    },
+    500: {
+      cocktail: "Daiquiri",
+      coffee: "Latte",
+      lemonade: "Glass",
+    },
   };
   return [
     {
+      char_limit: 250,
       id: 1,
-      name: productNames[tip] || "Coffee",
-      price_in_cents: pricing.price_250,
-      char_limit: pricing.character_limit || 250,
+      key: "250",
+      name: productNames[250][tip],
+      price_in_cents: price_250,
+    },
+    {
+      char_limit: 500,
+      id: 2,
+      key: "500",
+      name: productNames[500][tip],
+      price_in_cents: price_500,
+    },
+    {
+      char_limit: 1000,
+      id: 3,
+      key: "1000",
+      name: productNames[1000][tip],
+      price_in_cents: price_1000,
+    },
+    {
+      char_limit: 0,
+      id: 0,
+      is_custom: true,
+      key: "custom",
+      name: "Custom",
+      price_in_cents: 0,
     },
   ];
 };
-
-
 
 export const MIN_COFFEE_AMOUNT = 100; // minimum $1 (in cents)
 
@@ -116,39 +157,43 @@ export const NGN_TO_USD_RATE = 1420;
 
 // Convert NGN to USD
 export function ngnToUsd(ngnAmountInCents: number): number {
-  return Math.round(ngnAmountInCents / NGN_TO_USD_RATE)
+  return Math.round(ngnAmountInCents / NGN_TO_USD_RATE);
 }
 
-
-
 export function capitalize(str?: string): string {
-  if (!str || str.length === 0) return "";
+  if (!str || str.length === 0) {return "";}
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Get emoji based on support_theme
 export function getThemeEmoji(support_theme?: SupportTheme): string {
   switch (support_theme) {
-    case "cocktail":
+    case "cocktail": {
       return "🍹";
-    case "lemonade":
+    }
+    case "lemonade": {
       return "🧃";
+    }
     case "coffee":
-    default:
+    default: {
       return "☕";
+    }
   }
 }
 
 // Get label based on support_theme (e.g., "Coffee", "Cocktail")
 export function getThemeLabel(support_theme?: SupportTheme): string {
   switch (support_theme) {
-    case "cocktail":
+    case "cocktail": {
       return "Cocktail";
-    case "lemonade":
+    }
+    case "lemonade": {
       return "Lemonade";
+    }
     case "coffee":
-    default:
+    default: {
       return "Coffee";
+    }
   }
 }
 
@@ -197,5 +242,8 @@ export const CURRENCIES = [
 
 // Get currency symbol from currency code
 export function getCurrencySymbol(currencyCode?: string): string {
-  return CURRENCIES.find((c) => c.code === currencyCode?.toLowerCase())?.symbol ?? "$";
+  return (
+    CURRENCIES.find((c) => c.code === currencyCode?.toLowerCase())?.symbol ??
+    "$"
+  );
 }

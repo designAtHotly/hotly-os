@@ -44,6 +44,8 @@ SET display_name = $1,
     one_time_price_cents = $4,
     one_time_character_limit = $5,
     weekly_price_cents = $6,
+    price_500_cents = $7,
+    price_1000_cents = $8,
     updated_at = now()
 WHERE singleton = TRUE
 RETURNING *;

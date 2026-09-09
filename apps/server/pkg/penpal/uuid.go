@@ -28,7 +28,10 @@ func int8(n int64) pgtype.Int8 {
 	return pgtype.Int8{Int64: n, Valid: true}
 }
 
-func int4(n int32) pgtype.Int4 {
+func optionalInt4(n int32) pgtype.Int4 {
+	if n <= 0 {
+		return pgtype.Int4{}
+	}
 	return pgtype.Int4{Int32: n, Valid: true}
 }
 

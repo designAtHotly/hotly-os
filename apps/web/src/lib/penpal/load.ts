@@ -1,7 +1,6 @@
-import type { CoffeeCreator, CreatorPricing } from "@/types/coffee.types";
-
 import { appMediaUrl } from "@/lib/media/url";
 import { fetchPenpalOffer } from "@/lib/penpal/offer";
+import type { CoffeeCreator, CreatorPricing } from "@/types/coffee.types";
 
 export async function loadPenpalCreator(): Promise<{
   creator: CoffeeCreator;
@@ -11,24 +10,24 @@ export async function loadPenpalCreator(): Promise<{
   const offer = await fetchPenpalOffer();
   return {
     creator: {
-      id: 1,
-      uuid: "creator",
-      user_id: offer.creator_user_id || 0,
-      name: offer.display_name,
-      username: "creator",
-      bio: offer.description || undefined,
       avatar_url: appMediaUrl(offer.avatar_url),
-      variant: "penpal",
+      bio: offer.description || undefined,
+      id: 1,
+      name: offer.display_name,
       support_theme: offer.support_item,
+      user_id: offer.creator_user_id || 0,
+      username: "creator",
+      uuid: "creator",
+      variant: "penpal",
     },
     pricing: {
+      character_limit: 250,
       currencyCode: "usd",
-      price_250: offer.one_time_price_cents,
-      price_500: offer.one_time_price_cents,
-      price_1000: offer.one_time_price_cents,
-      character_limit: offer.one_time_character_limit,
-      weekly_price_cents: offer.weekly_price_cents,
+      price_1000: offer.price_1000_cents,
+      price_250: offer.price_250_cents || offer.one_time_price_cents,
+      price_500: offer.price_500_cents,
       weekly_allowance_chars: offer.weekly_allowance_chars,
+      weekly_price_cents: offer.weekly_price_cents,
     },
     stripeConfigured: offer.stripe_configured,
   };

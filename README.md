@@ -91,7 +91,7 @@ Compose starts PostgreSQL 18, runs `db/migrations` before the API, then the Go A
 | `/auth/firebase` | Google sign-in |
 | `/auth/chat-recovery` | Guest recovery request and consume |
 
-USD only. Defaults: one-time note **$5** / 250 characters (`ONE_TIME_PRICE_CENTS=500`); weekly Penpal **$15** / 2,000 characters (`WEEKLY_PRICE_CENTS=1500`). The browser cannot set amount or currency.
+USD only. Defaults: one-time notes **$5 / 250**, **$10 / 500**, **$15 / 1,000** characters (`ONE_TIME_PRICE_CENTS`, `ONE_TIME_PRICE_500_CENTS`, `ONE_TIME_PRICE_1000_CENTS`); Custom must be at least $1 above the 1,000-character price; weekly Penpal **$15** / 2,000 characters (`WEEKLY_PRICE_CENTS=1500`). Named-tier Checkout ignores browser amount and currency.
 
 ## Apps
 
@@ -113,10 +113,10 @@ bun run dev
 
 Bring **DNS up before** the first public Compose. A raw droplet IP is a smoke host, not the origin guests, Google, Stripe, or recovery mail should use.
 
-Pin a **Release tag** (`v0.1.4`), not a drifting `main`. Hostname + A/AAAA first (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443. Docker Engine and Compose v2. Then curl — do not hand-edit `.env` or run Compose yourself:
+Pin a **Release tag** (`v0.1.5`), not a drifting `main`. Hostname + A/AAAA first (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443. Docker Engine and Compose v2. Then curl — do not hand-edit `.env` or run Compose yourself:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.4/scripts/install.sh | bash -s -- --tag v0.1.4 --github designAtHotly/hotly-os
+curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.5/scripts/install.sh | bash -s -- --tag v0.1.5 --github designAtHotly/hotly-os
 ```
 
 That unpacks to **`~/hotly-os`**. Answer the prompts for `https://your.domain.example` (canonical origin, Open Graph, `/robots.txt`, `/sitemap.xml`). The installer writes `.env`, uses the prod overlay (Postgres / API / Next.js not published), and starts Compose. From a checkout of that tag: `./scripts/install.sh --local`.

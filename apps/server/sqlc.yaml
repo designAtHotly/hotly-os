@@ -7,6 +7,7 @@ sql:
       - "../../db/migrations/000002_penpal_subscriptions.up.sql"
       - "../../db/migrations/000003_media_attachments.up.sql"
       - "../../db/migrations/000004_dome.up.sql"
+      - "../../db/migrations/000005_one_time_tiers.up.sql"
     gen:
       go:
         package: "db"

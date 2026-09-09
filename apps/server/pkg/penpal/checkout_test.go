@@ -28,6 +28,8 @@ func testCfg() *config.Config {
 		SupportItem:           "coffee",
 		OneTimePriceCents:     500,
 		OneTimeCharacterLimit: 250,
+		Price500Cents:         1000,
+		Price1000Cents:        1500,
 		WeeklyPriceCents:      1500,
 		WeeklyAllowanceChars:  2000,
 		RecoveryTokenSecret:   "test-recovery-token-secret-32b!!",
@@ -129,6 +131,68 @@ func TestCheckoutRejectsOverlongMessages(t *testing.T) {
 	})
 	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "message_too_long") {
 		t.Fatalf("limit: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestCheckoutChargesNamedTiersAndIgnoresClientAmount(t *testing.T) {
+	handler, fake, _, _ := testAPI()
+	rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"email":    "guest@example.com",
+		"message":  strings.Repeat("x", 251),
+		"tier":     "500",
+		"amount":   1,
+		"currency": "ngn",
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("500-char tier %d %s", rec.Code, rec.Body.String())
+	}
+	if fake.Last.AmountCents != 1000 {
+		t.Fatalf("500-char tier must charge $10, got %d", fake.Last.AmountCents)
+	}
+	rec = doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"email":   "guest@example.com",
+		"message": "A longer note.",
+		"tier":    "1000",
+		"amount":  1,
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("1000-char tier %d %s", rec.Code, rec.Body.String())
+	}
+	if fake.Last.AmountCents != 1500 {
+		t.Fatalf("1000-char tier must charge $15, got %d", fake.Last.AmountCents)
+	}
+}
+
+func TestCheckoutCustomAmountMustBeatTopTier(t *testing.T) {
+	handler, fake, _, _ := testAPI()
+	tooLow := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"email":               "guest@example.com",
+		"message":             "Custom note.",
+		"tier":                "custom",
+		"custom_amount_cents": 1500,
+	})
+	if tooLow.Code != http.StatusBadRequest || !strings.Contains(tooLow.Body.String(), "invalid_tier") {
+		t.Fatalf("custom floor: %d %s", tooLow.Code, tooLow.Body.String())
+	}
+	ok := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"email":               "guest@example.com",
+		"message":             strings.Repeat("x", 1200),
+		"tier":                "custom",
+		"custom_amount_cents": 1600,
+	})
+	if ok.Code != http.StatusOK {
+		t.Fatalf("custom checkout %d %s", ok.Code, ok.Body.String())
+	}
+	if fake.Last.AmountCents != 1600 {
+		t.Fatalf("custom must charge guest amount, got %d", fake.Last.AmountCents)
+	}
+	unknown := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"email":   "guest@example.com",
+		"message": "hi",
+		"tier":    "espresso",
+	})
+	if unknown.Code != http.StatusBadRequest || !strings.Contains(unknown.Body.String(), "invalid_tier") {
+		t.Fatalf("unknown tier: %d %s", unknown.Code, unknown.Body.String())
 	}
 }
 
@@ -571,13 +635,14 @@ func TestCreatorSettingsUpdateChangesPublicOffer(t *testing.T) {
 		t.Fatalf("settings get %d %s", before.Code, before.Body.String())
 	}
 	patch := doJSON(handler, http.MethodPatch, "/creator/settings", map[string]any{
-		"display_name":             "Ada Lovelace",
-		"description":              "Notes from the desk.",
-		"support_item":             "lemonade",
-		"one_time_price_cents":     700,
-		"one_time_character_limit": 180,
-		"weekly_price_cents":       2200,
-		"currency":                 "usd",
+		"display_name":         "Ada Lovelace",
+		"description":          "Notes from the desk.",
+		"support_item":         "lemonade",
+		"one_time_price_cents": 700,
+		"price_500_cents":      1100,
+		"price_1000_cents":     1800,
+		"weekly_price_cents":   2200,
+		"currency":             "usd",
 	}, cookie)
 	if patch.Code != http.StatusOK {
 		t.Fatalf("patch %d %s", patch.Code, patch.Body.String())
@@ -587,30 +652,53 @@ func TestCreatorSettingsUpdateChangesPublicOffer(t *testing.T) {
 		t.Fatalf("offer %d %s", offer.Code, offer.Body.String())
 	}
 	body := offer.Body.String()
-	for _, want := range []string{`"display_name":"Ada Lovelace"`, `"support_item":"lemonade"`, `"one_time_price_cents":700`, `"weekly_price_cents":2200`, `"currency":"usd"`} {
+	for _, want := range []string{
+		`"display_name":"Ada Lovelace"`,
+		`"support_item":"lemonade"`,
+		`"one_time_price_cents":700`,
+		`"price_250_cents":700`,
+		`"price_500_cents":1100`,
+		`"price_1000_cents":1800`,
+		`"weekly_price_cents":2200`,
+		`"one_time_character_limit":250`,
+		`"currency":"usd"`,
+	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("public offer missing %s in %s", want, body)
 		}
 	}
 	ngn := doJSON(handler, http.MethodPatch, "/creator/settings", map[string]any{
-		"display_name":             "Ada",
-		"support_item":             "coffee",
-		"one_time_price_cents":     500,
-		"one_time_character_limit": 250,
-		"weekly_price_cents":       1500,
-		"currency":                 "ngn",
+		"display_name":         "Ada",
+		"support_item":         "coffee",
+		"one_time_price_cents": 500,
+		"price_500_cents":      1000,
+		"price_1000_cents":     1500,
+		"weekly_price_cents":   1500,
+		"currency":             "ngn",
 	}, cookie)
 	if ngn.Code != http.StatusBadRequest || !strings.Contains(ngn.Body.String(), "usd_only") {
 		t.Fatalf("ngn %d %s", ngn.Code, ngn.Body.String())
 	}
 	bad := doJSON(handler, http.MethodPatch, "/creator/settings", map[string]any{
-		"display_name":             "",
-		"support_item":             "coffee",
-		"one_time_price_cents":     500,
-		"one_time_character_limit": 250,
-		"weekly_price_cents":       1500,
+		"display_name":         "",
+		"support_item":         "coffee",
+		"one_time_price_cents": 500,
+		"price_500_cents":      1000,
+		"price_1000_cents":     1500,
+		"weekly_price_cents":   1500,
 	}, cookie)
 	if bad.Code != http.StatusBadRequest {
 		t.Fatalf("empty name %d %s", bad.Code, bad.Body.String())
+	}
+	inverted := doJSON(handler, http.MethodPatch, "/creator/settings", map[string]any{
+		"display_name":         "Ada",
+		"support_item":         "coffee",
+		"one_time_price_cents": 1500,
+		"price_500_cents":      1000,
+		"price_1000_cents":     500,
+		"weekly_price_cents":   1500,
+	}, cookie)
+	if inverted.Code != http.StatusBadRequest {
+		t.Fatalf("inverted ladder %d %s", inverted.Code, inverted.Body.String())
 	}
 }

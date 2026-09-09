@@ -338,7 +338,7 @@ UPDATE creators
 SET avatar_object_key = $1,
     updated_at = now()
 WHERE singleton = TRUE
-RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at
+RETURNING id, singleton, user_id, email, display_name, description, avatar_object_key, support_item, one_time_price_cents, one_time_character_limit, weekly_price_cents, weekly_allowance_chars, created_at, updated_at, price_500_cents, price_1000_cents
 `
 
 func (q *Queries) SetCreatorAvatarKey(ctx context.Context, avatarObjectKey pgtype.Text) (*Creator, error) {
@@ -359,6 +359,8 @@ func (q *Queries) SetCreatorAvatarKey(ctx context.Context, avatarObjectKey pgtyp
 		&i.WeeklyAllowanceChars,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price500Cents,
+		&i.Price1000Cents,
 	)
 	return &i, err
 }
