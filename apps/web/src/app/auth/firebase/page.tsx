@@ -52,7 +52,7 @@ export default function FirebaseAuthPage() {
       const nextSession = await exchangeFirebaseToken(idToken);
       setSession(nextSession);
       if (nextSession.is_creator) {
-        router.replace("/creator");
+        router.replace("/dashboard");
       }
     } catch (err) {
       const code = err instanceof Error ? err.message : "";
@@ -78,7 +78,7 @@ export default function FirebaseAuthPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-amber-100/40 via-transparent to-orange-50/20" />
       <main className="relative w-full max-w-md rounded-[32px] bg-white p-8 shadow-[0_25px_80px_-12px_rgba(0,0,0,0.12)]">
         <p className="mb-2 text-xs font-semibold tracking-wide text-ink-faint uppercase">
-          <Link href="/penpal" className="hover:text-ink">
+          <Link href="/" className="hover:text-ink">
             Penpal
           </Link>
         </p>

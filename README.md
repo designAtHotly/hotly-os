@@ -2,7 +2,7 @@
 
 Self-hosted Hotly for **exactly one creator**. Apache License 2.0. Guests buy a one-time note or a weekly Penpal subscription; the creator replies from an inbox, including optional image/video (free or paid unlock). `/dome` is the retained community. Payments go to the operator’s Stripe account.
 
-Browsers land on `/penpal`. The public origin is Caddy (`/` + `/api`), not `:3000` or `:8080`.
+Browsers land on `/`. The public origin is Caddy (`/` + `/api`), not `:3000` or `:8080`.
 
 ## Prerequisites
 
@@ -83,11 +83,12 @@ Compose starts PostgreSQL 18, runs `db/migrations` before the API, then the Go A
 
 | Path | Who |
 | --- | --- |
-| `/` | Redirects to `/penpal` |
-| `/penpal` | Public landing: creator, USD prices, Checkout, “Powered by Hotly.” |
+| `/` | Public landing: creator, USD prices, Checkout, “Powered by Hotly.” |
+| `/penpal` | Redirects to `/` |
 | `/chat` | Paid guest conversation (HTTP-only cookie after Checkout or recovery) |
 | `/dome`, `/dome/:promptSlug` | Community; `#note-<id>` is a stable note fragment |
-| `/creator`, `/creator/inbox`, `/creator/dome`, `/creator/settings` | Configured Firebase email only |
+| `/dashboard` | Creator home (configured Firebase email only). `/creator` redirects here. |
+| `/creator/inbox`, `/creator/dome`, `/creator/settings` | Inbox, Dome console, settings |
 | `/auth/firebase` | Google sign-in |
 | `/auth/chat-recovery` | Guest recovery request and consume |
 

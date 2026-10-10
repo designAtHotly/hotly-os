@@ -104,7 +104,7 @@ export function fallbackMetadata(): Metadata {
   return pageMetadata({
     title: "Hotly",
     description: PRODUCT_DESCRIPTION,
-    path: "/penpal",
+    path: "/",
   });
 }
 
@@ -112,7 +112,7 @@ export function fallbackMetadata(): Metadata {
  * Penpal landing card: “Buy {first} a {coffee}” plus bio.
  *
  * @param offer - Public Penpal offer JSON, or null when the API is down.
- * @returns Metadata for `/penpal`.
+ * @returns Metadata for `/`.
  */
 export function penpalMetadata(offer: PenpalOffer | null): Metadata {
   if (!offer) {
@@ -125,7 +125,7 @@ export function penpalMetadata(offer: PenpalOffer | null): Metadata {
   return pageMetadata({
     title,
     description,
-    path: "/penpal",
+    path: "/",
     image: offer.avatar_url,
   });
 }

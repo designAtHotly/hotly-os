@@ -165,16 +165,16 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 	}
 	publicID := publicIDString(row.PublicID)
 	origin := strings.TrimRight(s.cfg.PublicAppURL, "/")
-	success := origin + "/penpal?success=true&session_id={CHECKOUT_SESSION_ID}"
+	success := origin + "/?success=true&session_id={CHECKOUT_SESSION_ID}"
 	if in.Recurring {
-		success = origin + "/penpal?success=true&recurring=true&session_id={CHECKOUT_SESSION_ID}"
+		success = origin + "/?success=true&recurring=true&session_id={CHECKOUT_SESSION_ID}"
 	}
 	sess, err := s.stripe.CreateSession(ctx, billing.SessionParams{
 		CheckoutPublicID: publicID,
 		AmountCents:      amount,
 		ProductName:      product,
 		SuccessURL:       success,
-		CancelURL:        origin + "/penpal?canceled=true",
+		CancelURL:        origin + "/?canceled=true",
 		Recurring:        in.Recurring,
 	})
 	if err != nil {

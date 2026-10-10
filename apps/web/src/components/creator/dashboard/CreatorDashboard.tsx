@@ -106,7 +106,7 @@ export default function CreatorDashboard({ variant = "penpal" }: CreatorDashboar
           </div>
           <div className="px-6 pb-8 pt-4">
             <a
-              href="/penpal"
+              href="/"
               className="block w-full py-3 px-6 rounded-xl bg-gray-900 text-white font-semibold text-sm hover:bg-gray-800 active:scale-[0.98] transition-all"
             >
               Back to Penpal

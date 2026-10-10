@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
-
 import type { Metadata } from "next";
 
+import PenpalClient from "./penpal/penpal-client";
 import { penpalMetadata } from "@/lib/seo";
 import { loadSeoPenpal } from "@/lib/seo-data";
 
@@ -11,5 +10,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Home() {
-  redirect("/penpal");
+  return <PenpalClient />;
 }

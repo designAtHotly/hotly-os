@@ -583,11 +583,11 @@ configure_origin() {
 configure_creator() {
   local email name
   echo ""
-  info "Exactly one creator per install. That email is the only Google account that can open /creator."
-  email="$(prompt_matching "Creator email:" "$(env_get CREATOR_EMAIL)" looks_email "That is not an email. Use the Google account that will own /creator.")"
+  info "Exactly one creator per install. That email is the only Google account that can open /dashboard."
+  email="$(prompt_matching "Creator email:" "$(env_get CREATOR_EMAIL)" looks_email "That is not an email. Use the Google account that will own /dashboard.")"
   set_env CREATOR_EMAIL "$email"
-  info "Display name is the public name on /penpal, not the Google email."
-  name="$(prompt_matching "Display name:" "$(env_get CREATOR_DISPLAY_NAME)" looks_nonempty "Display name is the public /penpal name, not the Google email.")"
+  info "Display name is the public name on the landing page, not the Google email."
+  name="$(prompt_matching "Display name:" "$(env_get CREATOR_DISPLAY_NAME)" looks_nonempty "Display name is the public landing-page name, not the Google email.")"
   set_env CREATOR_DISPLAY_NAME "$name"
 }
 
@@ -658,7 +658,7 @@ configure_stripe() {
     return
   fi
   if ! yes_no "Configure Stripe now?" n; then
-    info "Skipped. /penpal Checkout stays off until you re-run."
+    info "Skipped. Checkout on / stays off until you re-run."
     return
   fi
   sk="$(prompt_matching "Secret key (sk_test_… / sk_live_… / rkcs_…):" "$(env_get STRIPE_SECRET_KEY)" looks_stripe_secret "Secret must start with sk_test_, sk_live_, rkcs_test_, or rkcs_live_ — no wrapping quotes.")"

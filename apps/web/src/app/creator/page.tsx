@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import CreatorDashboard from "@/components/creator/dashboard/CreatorDashboard";
-
-export default function CreatorHome() {
-  return <CreatorDashboard />;
+export default function CreatorRedirect() {
+  redirect("/dashboard");
 }

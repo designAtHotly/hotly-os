@@ -32,7 +32,7 @@ function SettingsBody() {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center gap-3 px-4 text-center">
         <p className="text-sm text-gray-500">Sign in with the configured creator account to edit settings.</p>
-        <a href="/creator" className="text-sm font-medium text-amber-700 underline-offset-2 hover:underline">
+        <a href="/dashboard" className="text-sm font-medium text-amber-700 underline-offset-2 hover:underline">
           Open creator console
         </a>
       </div>

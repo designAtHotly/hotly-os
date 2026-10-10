@@ -1,5 +1,5 @@
 export function getCreatorVariantPage(_creatorUsername?: string, _variant?: string) {
-  return "/penpal";
+  return "/";
 }
 
 export function getCreatorChatPage(_creatorUsername?: string) {
@@ -7,15 +7,15 @@ export function getCreatorChatPage(_creatorUsername?: string) {
 }
 
 export function getCreatorVariantShareUrl(_creatorUsername?: string, _variant?: string) {
-  return typeof window === "undefined" ? "/penpal" : `${window.location.origin}/penpal`;
+  return typeof window === "undefined" ? "/" : `${window.location.origin}/`;
 }
 
 export function getTermsOfServicePage() {
-  return "/penpal";
+  return "/";
 }
 
 export function getPrivacyPolicyPage() {
-  return "/penpal";
+  return "/";
 }
 
 export function getDomePage(_creatorUsername?: string) {

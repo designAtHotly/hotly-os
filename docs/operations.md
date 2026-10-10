@@ -83,7 +83,7 @@ Health:
 
 - `GET /api/health` through Caddy
 - `GET /api/auth/config` reports whether Firebase is configured
-- `/penpal` shows a payments-unavailable state when Stripe keys are empty
+- `/` shows a payments-unavailable state when Stripe keys are empty
 - `/auth/chat-recovery` explains when SendGrid is empty
 
 After adding a migration file:
@@ -141,7 +141,7 @@ Check out a **GitHub Release tag** (`v0.1.5`, not a drifting `main`) and rebuild
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 ```
 
-Migrations run before the new API serves traffic. `v0.1.5` adds `price_500_cents` and `price_1000_cents` (defaults $10 / $15) so `/penpal` shows Drip / Latte / Cold Brew / Custom. Existing `.env` files do not need new keys; creator settings persist the ladder. Confirm `GET /api/health` and a manual reload of `/penpal`, `/creator/inbox`, and `/dome`.
+Migrations run before the new API serves traffic. `v0.1.5` adds `price_500_cents` and `price_1000_cents` (defaults $10 / $15) so `/` shows Drip / Latte / Cold Brew / Custom. Existing `.env` files do not need new keys; creator settings persist the ladder. Confirm `GET /api/health` and a manual reload of `/`, `/dashboard`, `/creator/inbox`, and `/dome`.
 
 Rollback: keep the previous copy of the tree and rebuild it. Down migrations exist under `db/migrations/*.down.sql` but payment, media, and Dome rows are not automatically rewound. Do not `migrate down` on a live database unless you understand that data loss.
 
@@ -177,7 +177,7 @@ That is the local clean-machine check. A public host still needs a real `CADDY_S
 
 ## Stripe, Firebase, SendGrid
 
-Leave a provider empty to boot the stack (answer `n` at the installer `[y/N]`). User-facing pages then report that the provider is not configured (503 from the API, copy on `/auth/firebase`, `/auth/chat-recovery`, and `/penpal`). Re-run `./scripts/install.sh --local` to fill keys. Changing `CREATOR_EMAIL` revokes creator sessions and never creates a second creator.
+Leave a provider empty to boot the stack (answer `n` at the installer `[y/N]`). User-facing pages then report that the provider is not configured (503 from the API, copy on `/auth/firebase`, `/auth/chat-recovery`, and `/`). Re-run `./scripts/install.sh --local` to fill keys. Changing `CREATOR_EMAIL` revokes creator sessions and never creates a second creator.
 
 Installer prompts that look like `[y/N]` need `y` or `n` first. Do not paste an API key at that question. Names below are what those prompts write into `.env`, not a separate edit step.
 
@@ -188,11 +188,11 @@ FIREBASE_PROJECT_ID=
 FIREBASE_WEB_API_KEY=
 FIREBASE_AUTH_DOMAIN=   # usually project.firebaseapp.com
 FIREBASE_CREDENTIALS_JSON=/run/secrets/firebase.json
-CREATOR_EMAIL=          # the one Google account that may open /creator
+CREATOR_EMAIL=          # the one Google account that may open /dashboard
 CREATOR_DISPLAY_NAME=
 ```
 
-After the hostname is live, add it under Authentication → authorized domains. A second Google account must not open `/creator`.
+After the hostname is live, add it under Authentication → authorized domains. A second Google account must not open `/dashboard`.
 
 Firebase admin JSON must be readable **inside** the API container (user `hotly`). If you bind-mount `.secrets/firebase.json` as root-owned `600`, startup fails with invalid credentials. Use `chmod 644` on the host file, or an override like `docker-compose.override.yml`:
 

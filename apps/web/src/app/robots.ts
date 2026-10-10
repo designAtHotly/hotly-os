@@ -10,8 +10,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/penpal", "/dome"],
-        disallow: ["/creator", "/chat", "/auth"],
+        allow: ["/", "/dome"],
+        disallow: ["/dashboard", "/creator", "/chat", "/auth"],
       },
     ],
     sitemap: publicUrl("/sitemap.xml"),

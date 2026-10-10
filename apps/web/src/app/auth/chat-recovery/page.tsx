@@ -107,7 +107,7 @@ function RecoveryForm() {
         </>
       )}
       <p className="mt-6 text-center text-sm text-gray-400">
-        <Link href="/penpal" className="underline-offset-2 hover:underline">
+        <Link href="/" className="underline-offset-2 hover:underline">
           Back to Penpal
         </Link>
       </p>

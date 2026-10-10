@@ -6,18 +6,18 @@ Next.js (App Router) UI for the single-creator product. Production image is Bun 
 
 | Path | Page |
 | --- | --- |
-| `/` | Redirects to `/penpal` |
-| `/penpal` | Landing, compose, Checkout |
+| `/` | Landing, compose, Checkout |
+| `/penpal` | Redirects to `/` |
 | `/chat` | Guest conversation (cookie after payment or recovery) |
 | `/dome`, `/dome/[promptSlug]` | Community |
-| `/creator` | Creator home (configured email only) |
+| `/dashboard` | Creator home (configured email only). `/creator` redirects here. |
 | `/creator/inbox` | Threads, reply, attachments, block |
 | `/creator/dome` | Next prompt, read-only notes, members |
 | `/creator/settings` | Identity, description, USD prices, support item |
 | `/auth/firebase` | Google sign-in |
 | `/auth/chat-recovery` | Request and consume recovery |
 
-Firebase web config comes from `GET /api/auth/config`, not from committed client keys. Empty Firebase shows an explicit not-configured state. Empty Stripe disables Checkout copy on `/penpal`. Empty SendGrid explains itself on `/auth/chat-recovery`.
+Firebase web config comes from `GET /api/auth/config`, not from committed client keys. Empty Firebase shows an explicit not-configured state. Empty Stripe disables Checkout copy on `/`. Empty SendGrid explains itself on `/auth/chat-recovery`.
 
 ## Commands
 
