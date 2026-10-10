@@ -114,10 +114,10 @@ bun run dev
 
 Bring **DNS up before** the first public Compose. A raw droplet IP is a smoke host, not the origin guests, Google, Stripe, or recovery mail should use.
 
-Pin a **Release tag** (`v0.1.5`), not a drifting `main`. Hostname + A/AAAA first (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443. Docker Engine and Compose v2. Then curl — do not hand-edit `.env` or run Compose yourself:
+Pin a **Release tag** (`v0.1.6`), not a drifting `main`. Hostname + A/AAAA first (Cloudflare: **DNS only** until the certificate exists). 2 vCPU / 4 GB if you build on the box. TCP 80 and 443. Docker Engine and Compose v2. Then curl — do not hand-edit `.env` or run Compose yourself:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.5/scripts/install.sh | bash -s -- --tag v0.1.5 --github designAtHotly/hotly-os
+curl -fsSL https://raw.githubusercontent.com/designAtHotly/hotly-os/v0.1.6/scripts/install.sh | bash -s -- --tag v0.1.6 --github designAtHotly/hotly-os
 ```
 
 That unpacks to **`~/hotly-os`**. Answer the prompts for `https://your.domain.example` (canonical origin, Open Graph, `/robots.txt`, `/sitemap.xml`). The installer writes `.env`, uses the prod overlay (Postgres / API / Next.js not published), and starts Compose. From a checkout of that tag: `./scripts/install.sh --local`.

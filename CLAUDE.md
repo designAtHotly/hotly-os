@@ -16,7 +16,7 @@ Linux or macOS with Docker Engine and Compose v2:
 
 Or by hand: `cp .env.example .env`, set `CREATOR_EMAIL` plus `SESSION_SECRET`, `RECOVERY_TOKEN_SECRET`, and Garage keys, then `docker compose up --build`. Open [http://localhost](http://localhost). Health: `GET /api/health`.
 
-Production install pins a **Release tag** (see `README.md`; currently `v0.1.5`), not a drifting `main`. Ops: `README.md` and `docs/operations.md`.
+Production install pins a **Release tag** (see `README.md`; currently `v0.1.6`), not a drifting `main`. Ops: `README.md` and `docs/operations.md`.
 
 ---
 
