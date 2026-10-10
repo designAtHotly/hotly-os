@@ -9,7 +9,6 @@ import CoffeeTierSelector from "./CoffeeTierSelector";
 import { captureError } from "@/lib/utils/error-handler";
 import { ApiError } from "@/lib/api/impl/base";
 import { createCheckout } from "@/lib/utils/checkout";
-import { useAuth } from "@/hooks/useAuth";
 import {
   CoffeeCreator,
   CoffeeTier,
@@ -56,7 +55,6 @@ export default function CoffeePageImpl({
   const searchParams = useSearchParams();
   const isSuccess = searchParams.get("success") === "true";
   const tiers = getPricingTiers(creator.support_theme, pricing);
-  const { currentUser } = useAuth();
   const prefillMessage = searchParams.get("message") || "";
   const [selectedTier, setSelectedTier] = useState<CoffeeTier>(() => {
     if (!prefillMessage) return tiers[0];
@@ -67,12 +65,10 @@ export default function CoffeePageImpl({
   const [customAmount, setCustomAmount] = useState(0);
   const [message, setMessage] = useState(prefillMessage);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [guestEmail, setGuestEmail] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
   const [showMessagePrompt, setShowMessagePrompt] = useState(false);
-  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const [showAmountError, setShowAmountError] = useState(false);
 
   // Extract first name from creator name
@@ -172,13 +168,6 @@ export default function CoffeePageImpl({
       return;
     }
 
-    const checkoutEmail = currentUser?.email || guestEmail.trim();
-    if (!checkoutEmail || !checkoutEmail.includes("@")) {
-      setShowEmailPrompt(true);
-      setTimeout(() => setShowEmailPrompt(false), 2500);
-      return;
-    }
-
     setIsProcessing(true);
 
 
@@ -190,7 +179,6 @@ export default function CoffeePageImpl({
         message,
         chargeAmount,
         isRecurring,
-        email: checkoutEmail,
       });
 
       window.location.href = url;
@@ -452,37 +440,6 @@ export default function CoffeePageImpl({
                 )}
               </div>
             </div>
-
-            {!currentUser?.email ? (
-            <div
-              className={`
-                mb-4
-                transform transition-all duration-700 delay-250 ease-[cubic-bezier(0.16,1,0.3,1)]
-                ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
-              `}
-            >
-              <label htmlFor="penpal-email" className="block text-sm font-semibold tracking-wide uppercase text-gray-400 mb-2">
-                Your email
-              </label>
-              <input
-                id="penpal-email"
-                type="email"
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                placeholder="you@example.com"
-                className={`
-                  w-full px-4 py-3 rounded-2xl border-2 focus:outline-none
-                  ${colorTheme.textareaFocus}
-                  ${showEmailPrompt ? colorTheme.textareaError : "border-transparent"}
-                `}
-              />
-              {showEmailPrompt ? (
-                <p className={`text-xs font-medium mt-2 ${colorTheme.promptHintColor}`}>
-                  Add an email so we can open your chat after payment.
-                </p>
-              ) : null}
-            </div>
-            ) : null}
 
             <div
               className={`

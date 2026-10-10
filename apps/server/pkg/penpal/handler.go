@@ -194,6 +194,10 @@ func (h *Handler) webhook(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		if errors.Is(err, ErrCreatorEmail) || errors.Is(err, ErrInvalidEmail) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
 		if strings.Contains(strings.ToLower(err.Error()), "signature") || strings.Contains(strings.ToLower(err.Error()), "timestamp") || strings.Contains(strings.ToLower(err.Error()), "invalid event") {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_signature"})
 			return

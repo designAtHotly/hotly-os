@@ -97,10 +97,64 @@ func startPaidCheckout(t *testing.T, handler http.Handler, fake *billing.Fake) s
 	if fake.Last.AmountCents != 500 {
 		t.Fatalf("server must charge 500 cents, got %d", fake.Last.AmountCents)
 	}
-	if fake.Last.GuestEmail != "guest@example.com" {
-		t.Fatalf("email %s", fake.Last.GuestEmail)
+	if fake.Last.GuestEmail != "" {
+		t.Fatalf("Stripe must collect email, got %s", fake.Last.GuestEmail)
 	}
 	return fake.LastID
+}
+
+func TestCheckoutDoesNotRequireEmail(t *testing.T) {
+	handler, fake, _, _ := testAPI()
+	rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"message": "Hello from the cheap seats.",
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("checkout without email %d %s", rec.Code, rec.Body.String())
+	}
+	if fake.Last.GuestEmail != "" {
+		t.Fatalf("Stripe session must omit customer email, got %s", fake.Last.GuestEmail)
+	}
+}
+
+func TestWebhookUsesStripeCollectedEmail(t *testing.T) {
+	handler, fake, mem, _ := testAPI()
+	rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"message": "Hello from Stripe Checkout.",
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("checkout %d %s", rec.Code, rec.Body.String())
+	}
+	wh := postWebhook(handler, `{"id":"evt_stripe_email","type":"checkout.session.completed","session_id":"`+fake.LastID+`","amount_cents":500,"payment_status":"paid","guest_email":"guest@example.com"}`)
+	if wh.Code != http.StatusOK {
+		t.Fatalf("webhook %d %s", wh.Code, wh.Body.String())
+	}
+	if mem.MessageCount() != 1 {
+		t.Fatalf("expected guest conversation, messages=%d", mem.MessageCount())
+	}
+	claim := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": fake.LastID})
+	if claim.Code != http.StatusOK || !strings.Contains(claim.Body.String(), "guest@example.com") {
+		t.Fatalf("claim %d %s", claim.Code, claim.Body.String())
+	}
+}
+
+func TestWebhookRejectsCreatorEmail(t *testing.T) {
+	handler, fake, mem, _ := testAPI()
+	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 250, 1500, 1); err != nil {
+		t.Fatal(err)
+	}
+	rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+		"message": "Should not become a guest chat.",
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("checkout %d %s", rec.Code, rec.Body.String())
+	}
+	wh := postWebhook(handler, `{"id":"evt_creator_email","type":"checkout.session.completed","session_id":"`+fake.LastID+`","amount_cents":500,"payment_status":"paid","guest_email":"creator@example.com"}`)
+	if wh.Code != http.StatusBadRequest || !strings.Contains(wh.Body.String(), "creator_email") {
+		t.Fatalf("creator email webhook %d %s", wh.Code, wh.Body.String())
+	}
+	if mem.MessageCount() != 0 {
+		t.Fatalf("creator email must not open a guest chat, messages=%d", mem.MessageCount())
+	}
 }
 
 func TestCheckoutIgnoresBrowserAmountAndCurrency(t *testing.T) {

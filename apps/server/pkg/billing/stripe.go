@@ -39,7 +39,6 @@ func (s *Stripe) CreateSession(ctx context.Context, p SessionParams) (*Session, 
 		Mode:              stripe.String(string(mode)),
 		SuccessURL:        stripe.String(p.SuccessURL),
 		CancelURL:         stripe.String(p.CancelURL),
-		CustomerEmail:     stripe.String(p.GuestEmail),
 		ClientReferenceID: stripe.String(p.CheckoutPublicID),
 		Metadata: map[string]string{
 			"hotly_checkout_public_id": p.CheckoutPublicID,
@@ -47,6 +46,9 @@ func (s *Stripe) CreateSession(ctx context.Context, p SessionParams) (*Session, 
 		LineItems: []*stripe.CheckoutSessionCreateLineItemParams{
 			{Quantity: stripe.Int64(1), PriceData: price},
 		},
+	}
+	if email := strings.TrimSpace(p.GuestEmail); email != "" {
+		params.CustomerEmail = stripe.String(email)
 	}
 	sess, err := s.client.V1CheckoutSessions.Create(ctx, params)
 	if err != nil {
@@ -104,6 +106,12 @@ func fillCheckoutEvent(ev *Event, raw json.RawMessage) {
 	ev.AmountCents = sess.AmountTotal
 	ev.Currency = strings.ToLower(string(sess.Currency))
 	ev.PaymentStatus = string(sess.PaymentStatus)
+	if sess.CustomerDetails != nil {
+		ev.GuestEmail = strings.TrimSpace(sess.CustomerDetails.Email)
+	}
+	if ev.GuestEmail == "" {
+		ev.GuestEmail = strings.TrimSpace(sess.CustomerEmail)
+	}
 }
 
 func fillSubscriptionEvent(ev *Event, raw json.RawMessage) {

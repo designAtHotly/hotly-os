@@ -3,6 +3,7 @@ package penpal
 import (
 	"context"
 	"fmt"
+	"net/mail"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -15,6 +16,8 @@ type eventStore interface {
 	TryInsertEvent(ctx context.Context, id, typ string) (inserted bool, err error)
 	LookupCheckout(ctx context.Context, sessionID, publicID string) (*db.Checkout, error)
 	FindUserByEmail(ctx context.Context, email string) (*db.User, error)
+	GetCreator(ctx context.Context) (*db.Creator, error)
+	SetCheckoutGuestEmail(ctx context.Context, checkoutID int64, email string) error
 	CreateGuestUser(ctx context.Context, email, name string) (*db.User, error)
 	CompleteCheckout(ctx context.Context, checkoutID, userID int64) (bool, error)
 	SetPendingStatus(ctx context.Context, checkoutID int64, status string) error
@@ -113,6 +116,25 @@ func completePaidUnlock(ctx context.Context, store eventStore, checkout *db.Chec
 	return store.InsertUnlock(ctx, checkout.TargetMessageID.Int64, user.ID, checkout.ID)
 }
 
+func guestEmailFrom(checkout *db.Checkout, ev billing.Event) string {
+	email := strings.TrimSpace(ev.GuestEmail)
+	if email == "" {
+		email = strings.TrimSpace(checkout.GuestEmail)
+	}
+	return email
+}
+
+func rejectCreatorGuestEmail(ctx context.Context, store eventStore, email string) error {
+	creator, err := store.GetCreator(ctx)
+	if err != nil {
+		return err
+	}
+	if creator != nil && strings.EqualFold(email, creator.Email) {
+		return ErrCreatorEmail
+	}
+	return nil
+}
+
 func completeOneTime(ctx context.Context, store eventStore, checkout *db.Checkout, ev billing.Event) (paidNotice, error) {
 	if ev.AmountCents > 0 && ev.AmountCents != checkout.AmountCents {
 		return paidNotice{}, store.SetPendingStatus(ctx, checkout.ID, "failed")
@@ -120,6 +142,20 @@ func completeOneTime(ctx context.Context, store eventStore, checkout *db.Checkou
 	if ev.Currency != "" && !strings.EqualFold(ev.Currency, "usd") {
 		return paidNotice{}, store.SetPendingStatus(ctx, checkout.ID, "failed")
 	}
+
+	email := guestEmailFrom(checkout, ev)
+	if _, err := mail.ParseAddress(email); err != nil {
+		_ = store.SetPendingStatus(ctx, checkout.ID, "failed")
+		return paidNotice{}, ErrInvalidEmail
+	}
+	if err := rejectCreatorGuestEmail(ctx, store, email); err != nil {
+		_ = store.SetPendingStatus(ctx, checkout.ID, "failed")
+		return paidNotice{}, err
+	}
+	if err := store.SetCheckoutGuestEmail(ctx, checkout.ID, email); err != nil {
+		return paidNotice{}, err
+	}
+	checkout.GuestEmail = email
 
 	user, err := store.FindUserByEmail(ctx, checkout.GuestEmail)
 	if err != nil {

@@ -21,7 +21,8 @@ func TestParseWebhookAcceptsNewerCheckoutAPIVersion(t *testing.T) {
 				"amount_total": 500,
 				"currency": "usd",
 				"payment_status": "paid",
-				"payment_intent": "pi_1"
+				"payment_intent": "pi_1",
+				"customer_details": {"email": "guest@example.com"}
 			}
 		}
 	}`)
@@ -35,6 +36,9 @@ func TestParseWebhookAcceptsNewerCheckoutAPIVersion(t *testing.T) {
 	}
 	if ev.SessionID != "cs_test_1" || ev.AmountCents != 500 || ev.PaymentStatus != "paid" || ev.PaymentIntentID != "pi_1" {
 		t.Fatalf("session fields %+v", ev)
+	}
+	if ev.GuestEmail != "guest@example.com" {
+		t.Fatalf("guest email %+v", ev)
 	}
 }
 

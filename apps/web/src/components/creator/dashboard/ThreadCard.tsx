@@ -337,7 +337,7 @@ export function ThreadCard({
   const fanName = chat.fan_name || "Fan";
   // TODO safe case
   const fanInitials = fanName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-  const needsReply = Boolean(chat.last_message_uuid && chat.last_message_sender_id === chat.fan_user_id);
+  const needsReply = chat.unreplied === true;
 
   // Sneak peek: second-to-last message from API (available immediately without loading)
   // Show history if prev message has content or if last message has attachments (indicating conversation activity)

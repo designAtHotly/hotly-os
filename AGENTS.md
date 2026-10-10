@@ -4,6 +4,22 @@ Edit **this** tree (`designAtHotly/hotly-os`).
 
 ---
 
+# Run it locally
+
+Do not commit `.env`, Firebase JSON, or other secrets.
+
+Linux or macOS with Docker Engine and Compose v2:
+
+```bash
+./scripts/install.sh --local
+```
+
+Or by hand: `cp .env.example .env`, set `CREATOR_EMAIL` plus `SESSION_SECRET`, `RECOVERY_TOKEN_SECRET`, and Garage keys, then `docker compose up --build`. Open [http://localhost](http://localhost). Health: `GET /api/health`.
+
+Production install pins a **Release tag** (see `README.md`; currently `v0.1.5`), not a drifting `main`. Ops: `README.md` and `docs/operations.md`.
+
+---
+
 # Ultracite Code Standards
 
 This project uses **Ultracite**, a zero-config preset that enforces strict code quality standards through automated formatting and linting.

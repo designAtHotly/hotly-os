@@ -1,20 +1,11 @@
 # Lefthook configuration
 # https://github.com/evilmartians/lefthook
+#
+# Do not run `ultracite fix` here. Inherited UI trips hundreds of style rules;
+# CI is Go tests, `bun run check-types`, and Compose config (see CONTRIBUTING.md).
 
 pre-commit:
   parallel: true
   jobs:
-    - run: bun x ultracite fix
-      glob:
-        - "**/*.js"
-        - "**/*.jsx"
-        - "**/*.ts"
-        - "**/*.tsx"
-        - "**/*.json"
-        - "**/*.jsonc"
-        - "**/*.css"
-      stage_fixed: true
-    # Add your pre-commit commands here
-    # Example:
-    # - name: lint
-    #   run:  lint
+    - name: skip-ultracite
+      run: "true"

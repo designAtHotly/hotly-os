@@ -12,7 +12,6 @@ interface CreateCheckoutParams {
   message: string;
   chargeAmount: ChargeAmount;
   isRecurring: boolean;
-  email?: string;
 }
 
 interface CheckoutResult {
@@ -24,14 +23,12 @@ export async function createCheckout({
   message,
   chargeAmount,
   isRecurring,
-  email,
 }: CreateCheckoutParams): Promise<CheckoutResult> {
   try {
     const { body } = await createCoffeeCheckoutSession({
       custom_amount_cents: selectedTier.is_custom
         ? chargeAmount.price_in_cents
         : undefined,
-      email: email || undefined,
       message: message.trim(),
       recurring: isRecurring,
       tier: selectedTier.key,

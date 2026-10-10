@@ -547,6 +547,17 @@ func (m *Mem) CreateGuestUser(_ context.Context, email, name string) (*db.User, 
 	return cloneUser(u), nil
 }
 
+func (m *Mem) SetCheckoutGuestEmail(_ context.Context, checkoutID int64, email string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	row := m.checkouts[checkoutID]
+	if row == nil {
+		return ErrNotFound
+	}
+	row.GuestEmail = email
+	return nil
+}
+
 func (m *Mem) CompleteCheckout(_ context.Context, checkoutID, userID int64) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

@@ -89,6 +89,7 @@ export interface ApiCreatorChat {
   currency_code: string;
   last_message_attachments?: ChatMessageAttachment[];
   blocked_at: string | null;
+  unreplied: boolean;
 }
 
 export interface ApiDashboardStats {
@@ -215,7 +216,6 @@ export async function createCoffeeCheckoutSession(params: {
   return apiCall("/api/penpal/checkout", {
     body: JSON.stringify({
       message: params.message,
-      email: params.email,
       recurring: params.recurring === true,
       tier: params.tier,
       custom_amount_cents: params.custom_amount_cents,
@@ -354,6 +354,7 @@ export async function fetchCreatorDashboard(): Promise<
         prev_message_sender_id: null,
         subscription_amount_cents: row.subscription_amount_cents ?? null,
         total_paid_cents: row.total_paid_cents ?? 0,
+        unreplied: row.unreplied === true,
         updated_at: activity,
         uuid: String(id),
       };
@@ -369,9 +370,7 @@ export async function fetchCreatorDashboard(): Promise<
     referral_count: 0,
     referral_earnings_by_currency: [],
     stats: {
-      pending_replies: chats.filter(
-        (c) => c.last_message_sender_id === c.fan_user_id
-      ).length,
+      pending_replies: chats.filter((c) => c.unreplied).length,
       penpal_count: chats.length,
       total_earned: 0,
       total_supporters: chats.length,

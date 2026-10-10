@@ -429,6 +429,22 @@ func (q *Queries) SetCheckoutStripeSession(ctx context.Context, arg SetCheckoutS
 	return err
 }
 
+const setCheckoutGuestEmail = `-- name: SetCheckoutGuestEmail :exec
+UPDATE checkouts
+SET guest_email = $2
+WHERE id = $1
+`
+
+type SetCheckoutGuestEmailParams struct {
+	ID         int64  `json:"id"`
+	GuestEmail string `json:"guest_email"`
+}
+
+func (q *Queries) SetCheckoutGuestEmail(ctx context.Context, arg SetCheckoutGuestEmailParams) error {
+	_, err := q.db.Exec(ctx, setCheckoutGuestEmail, arg.ID, arg.GuestEmail)
+	return err
+}
+
 const setConversationBlocked = `-- name: SetConversationBlocked :execrows
 UPDATE conversations
 SET blocked_at = now()

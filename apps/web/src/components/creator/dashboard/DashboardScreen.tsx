@@ -103,10 +103,8 @@ export function PenpalDashboardScreen({
     }
   };
 
-  // Helper to check if chat needs reply (last message is from fan, not creator)
   const chatNeedsReply = useCallback((chat: ApiCreatorChat) => {
-    if (!chat.last_message_uuid) {return false;}
-    return chat.last_message_sender_id === chat.fan_user_id;
+    return chat.unreplied === true;
   }, []);
 
   // Filter and sort chats by tab
@@ -202,14 +200,15 @@ export function PenpalDashboardScreen({
           // Update the chat to reflect the reply (instead of removing it)
           setChats((prev) =>
             prev.map((c) => {
-              if (c.fan_user_id !== fanUserId) {return c;}
+              if (Number(c.fan_user_id) !== Number(fanUserId)) {return c;}
               const now = new Date().toISOString();
               return {
                 ...c,
                 last_message_attachments: replied.attachments,
                 last_message_content: content,
                 last_message_created_at: now,
-                last_message_sender_id: creator.user_id,
+                last_message_sender_id: Number(creator.user_id) || -1,
+                unreplied: false,
                 updated_at: now,
               };
             })

@@ -32,6 +32,7 @@ type Event struct {
 	SubscriptionStatus string `json:"subscription_status"`
 	PeriodStart        int64  `json:"period_start"`
 	PeriodEnd          int64  `json:"period_end"`
+	GuestEmail         string `json:"guest_email"`
 }
 
 type Gateway interface {

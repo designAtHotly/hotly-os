@@ -119,11 +119,13 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 		return "", ErrStripeNotConfigured
 	}
 	email := strings.TrimSpace(in.Email)
-	if _, err := mail.ParseAddress(email); err != nil {
-		return "", ErrInvalidEmail
-	}
-	if strings.EqualFold(email, s.cfg.CreatorEmail) {
-		return "", ErrCreatorEmail
+	if email != "" {
+		if _, err := mail.ParseAddress(email); err != nil {
+			return "", ErrInvalidEmail
+		}
+		if strings.EqualFold(email, s.cfg.CreatorEmail) {
+			return "", ErrCreatorEmail
+		}
 	}
 	message := strings.TrimSpace(in.Message)
 	if message == "" {
@@ -169,7 +171,6 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 	}
 	sess, err := s.stripe.CreateSession(ctx, billing.SessionParams{
 		CheckoutPublicID: publicID,
-		GuestEmail:       email,
 		AmountCents:      amount,
 		ProductName:      product,
 		SuccessURL:       success,

@@ -323,6 +323,21 @@ func (p *pgEventStore) FindUserByEmail(ctx context.Context, email string) (*db.U
 	return row, err
 }
 
+func (p *pgEventStore) GetCreator(ctx context.Context) (*db.Creator, error) {
+	row, err := p.q.GetCreator(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return row, err
+}
+
+func (p *pgEventStore) SetCheckoutGuestEmail(ctx context.Context, checkoutID int64, email string) error {
+	return p.q.SetCheckoutGuestEmail(ctx, db.SetCheckoutGuestEmailParams{
+		ID:         checkoutID,
+		GuestEmail: email,
+	})
+}
+
 func (p *pgEventStore) CreateGuestUser(ctx context.Context, email, name string) (*db.User, error) {
 	return p.q.CreateGuestUser(ctx, db.CreateGuestUserParams{Email: email, DisplayName: name})
 }

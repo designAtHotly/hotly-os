@@ -80,6 +80,11 @@ UPDATE checkouts
 SET stripe_checkout_session_id = $2
 WHERE id = $1;
 
+-- name: SetCheckoutGuestEmail :exec
+UPDATE checkouts
+SET guest_email = $2
+WHERE id = $1;
+
 -- name: GetCheckoutByStripeSessionID :one
 SELECT *
 FROM checkouts
