@@ -1,5 +1,15 @@
 # Hotly open-source
 
+**A paid inbox for one creator, on your own server.** Fans pay to send a note or subscribe weekly. The creator replies from one inbox. Stripe pays the creator directly.
+
+![A guest writes a note and pays, then the creator replies from the inbox](docs/demo.gif)
+
+- **See it:** [hotly.com](https://hotly.com)
+- **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
+- **Don't want a server?** [We host it](https://hotly.com/hosted) for $5.99/mo + 20%
+
+Maintained by the Hotly team, with a release about once a month. Releases are tagged; pin one.
+
 Self-hosted Hotly for **exactly one creator**. Apache License 2.0. Guests buy a one-time note or a weekly Penpal subscription; the creator replies from an inbox, including optional image/video (free or paid unlock). `/dome` is the retained community. Payments go to the operator’s Stripe account.
 
 Browsers land on `/`. The public origin is Caddy (`/` + `/api`), not `:3000` or `:8080`.
