@@ -77,6 +77,12 @@ func TestRateLimitAndTrustedProxyIP(t *testing.T) {
 	}
 }
 
+func TestSensitiveWriteCoversCheckoutClaim(t *testing.T) {
+	if !SensitiveWrite(httptest.NewRequest(http.MethodPost, "/api/penpal/claim", nil)) {
+		t.Fatal("checkout claim must be rate limited")
+	}
+}
+
 func TestClientIPIgnoresForwardedHeaderFromPublicPeers(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.RemoteAddr = "203.0.113.5:80"

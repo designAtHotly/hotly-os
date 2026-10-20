@@ -86,6 +86,7 @@ func SensitiveWrite(r *http.Request) bool {
 	p := r.URL.Path
 	return strings.HasSuffix(p, "/auth/firebase") ||
 		strings.HasSuffix(p, "/penpal/checkout") ||
+		strings.HasSuffix(p, "/penpal/claim") ||
 		strings.HasSuffix(p, "/penpal/recovery") ||
 		strings.HasSuffix(p, "/chat/messages") ||
 		strings.HasSuffix(p, "/dome/notes")

@@ -32,6 +32,7 @@ func testCfg() *config.Config {
 		Price1000Cents:        1500,
 		WeeklyPriceCents:      1500,
 		WeeklyAllowanceChars:  2000,
+		SessionSecret:         "test-session-secret-32-bytes!!!!",
 		RecoveryTokenSecret:   "test-recovery-token-secret-32b!!",
 		Stripe: config.StripeConfig{
 			SecretKey:      "sk_test_x",
@@ -85,6 +86,13 @@ func doJSON(handler http.Handler, method, path string, body any, cookies ...*htt
 
 func startPaidCheckout(t *testing.T, handler http.Handler, fake *billing.Fake) string {
 	t.Helper()
+	sessionID, _ := startBoundCheckout(t, handler, fake)
+	return sessionID
+}
+
+// startBoundCheckout also returns the claim cookie the checkout leaves on the paying browser.
+func startBoundCheckout(t *testing.T, handler http.Handler, fake *billing.Fake) (string, *http.Cookie) {
+	t.Helper()
 	rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
 		"email":    "guest@example.com",
 		"message":  "Hello from the cheap seats.",
@@ -100,7 +108,16 @@ func startPaidCheckout(t *testing.T, handler http.Handler, fake *billing.Fake) s
 	if fake.Last.GuestEmail != "" {
 		t.Fatalf("Stripe must collect email, got %s", fake.Last.GuestEmail)
 	}
-	return fake.LastID
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == claimCookieName {
+			if !c.HttpOnly || c.Value == "" {
+				t.Fatalf("claim cookie must be HTTP-only and set, got %+v", c)
+			}
+			return fake.LastID, c
+		}
+	}
+	t.Fatal("checkout must set the claim cookie")
+	return "", nil
 }
 
 func TestCheckoutDoesNotRequireEmail(t *testing.T) {
@@ -386,6 +403,76 @@ func TestClaimIssuesCookieAfterServerConfirmation(t *testing.T) {
 	}
 }
 
+func TestClaimIsSingleUseOutsideThePayingBrowser(t *testing.T) {
+	handler, fake, _, _ := testAPI()
+	sessionID, paying := startBoundCheckout(t, handler, fake)
+	postWebhook(handler, `{"id":"evt_once","type":"checkout.session.completed","session_id":"`+sessionID+`","amount_cents":500,"payment_status":"paid"}`)
+	first := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}, paying)
+	if first.Code != http.StatusOK {
+		t.Fatalf("first claim %d %s", first.Code, first.Body.String())
+	}
+	second := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID})
+	if second.Code != http.StatusGone || !strings.Contains(second.Body.String(), "claim_expired") {
+		t.Fatalf("second claim from another browser %d %s", second.Code, second.Body.String())
+	}
+	for _, c := range second.Result().Cookies() {
+		if c.Name == auth.SessionCookieName {
+			t.Fatal("a refused claim must not set a session cookie")
+		}
+	}
+	forged := &http.Cookie{Name: claimCookieName, Value: strings.Repeat("0", 64)}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}, forged); rec.Code != http.StatusGone {
+		t.Fatalf("claim with a forged claim cookie %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}, paying); rec.Code != http.StatusOK {
+		t.Fatalf("refresh in the paying browser %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestFirstClaimDoesNotNeedTheClaimCookie(t *testing.T) {
+	handler, fake, _, _ := testAPI()
+	sessionID, paying := startBoundCheckout(t, handler, fake)
+	postWebhook(handler, `{"id":"evt_nocookie","type":"checkout.session.completed","session_id":"`+sessionID+`","amount_cents":500,"payment_status":"paid"}`)
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}); rec.Code != http.StatusOK {
+		t.Fatalf("first claim without cookie %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}); rec.Code != http.StatusGone {
+		t.Fatalf("second claim without cookie %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}, paying); rec.Code != http.StatusOK {
+		t.Fatalf("paying browser after another claim %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestClaimExpiresAfterWindow(t *testing.T) {
+	handler, fake, mem, _ := testAPI()
+	sessionID, paying := startBoundCheckout(t, handler, fake)
+	postWebhook(handler, `{"id":"evt_stale","type":"checkout.session.completed","session_id":"`+sessionID+`","amount_cents":500,"payment_status":"paid"}`)
+	mem.BackdateCheckoutCompletion(sessionID, claimWindow+time.Minute)
+	rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID})
+	if rec.Code != http.StatusGone || !strings.Contains(rec.Body.String(), "claim_expired") {
+		t.Fatalf("stale claim %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}, paying); rec.Code != http.StatusGone {
+		t.Fatalf("stale claim from the paying browser %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestPendingClaimKeepsPollingWithoutUsingTheClaim(t *testing.T) {
+	handler, fake, _, _ := testAPI()
+	sessionID := startPaidCheckout(t, handler, fake)
+	for range 3 {
+		rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID})
+		if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "payment_pending") {
+			t.Fatalf("pending claim %d %s", rec.Code, rec.Body.String())
+		}
+	}
+	postWebhook(handler, `{"id":"evt_poll","type":"checkout.session.completed","session_id":"`+sessionID+`","amount_cents":500,"payment_status":"paid"}`)
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}); rec.Code != http.StatusOK {
+		t.Fatalf("claim after polling %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestCreatorCanReplyToPaidConversation(t *testing.T) {
 	handler, fake, mem, authSvc := testAPI()
 	sessionID := startPaidCheckout(t, handler, fake)
@@ -572,7 +659,7 @@ func TestInboxShowsUnrepliedPaymentAndSubscriberContext(t *testing.T) {
 
 func TestBlockUnblockRemovesAndRestoresGuestAccess(t *testing.T) {
 	handler, fake, mem, authSvc := testAPI()
-	sessionID := startPaidCheckout(t, handler, fake)
+	sessionID, paying := startBoundCheckout(t, handler, fake)
 	postWebhook(handler, `{"id":"evt_block","type":"checkout.session.completed","session_id":"`+sessionID+`","amount_cents":500,"payment_status":"paid"}`)
 	guest := claimCookie(t, handler, sessionID)
 	if rec := doJSON(handler, http.MethodGet, "/chat", nil, guest); rec.Code != http.StatusOK {
@@ -603,8 +690,11 @@ func TestBlockUnblockRemovesAndRestoresGuestAccess(t *testing.T) {
 	if rec := doJSON(handler, http.MethodGet, "/chat", nil, guest); rec.Code != http.StatusOK {
 		t.Fatalf("chat after unblock %d %s", rec.Code, rec.Body.String())
 	}
-	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}); rec.Code != http.StatusOK {
-		t.Fatalf("claim after unblock %d %s", rec.Code, rec.Body.String())
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}); rec.Code != http.StatusGone {
+		t.Fatalf("claim after unblock from another browser %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": sessionID}, paying); rec.Code != http.StatusOK {
+		t.Fatalf("claim after unblock from the paying browser %d %s", rec.Code, rec.Body.String())
 	}
 }
 

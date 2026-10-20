@@ -332,6 +332,26 @@ func (m *Mem) GetCheckoutByPublicID(_ context.Context, publicID string) (*db.Che
 	return cloneCheckout(m.checkouts[id]), nil
 }
 
+func (m *Mem) MarkCheckoutClaimed(_ context.Context, id int64) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	row := m.checkouts[id]
+	if row == nil || row.Status != "completed" || row.ClaimedAt.Valid {
+		return false, nil
+	}
+	row.ClaimedAt = pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true}
+	return true, nil
+}
+
+// BackdateCheckoutCompletion moves a completed checkout's completed_at into the past (tests).
+func (m *Mem) BackdateCheckoutCompletion(sessionID string, by time.Duration) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if row := m.checkouts[m.bySession[sessionID]]; row != nil && row.CompletedAt.Valid {
+		row.CompletedAt.Time = row.CompletedAt.Time.Add(-by)
+	}
+}
+
 func (m *Mem) ApplyEvent(ctx context.Context, ev billing.Event) (paidNotice, error) {
 	m.mu.Lock()
 	if m.failApply {

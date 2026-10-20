@@ -160,6 +160,9 @@ func TestPaidAttachmentStaysLockedUntilUnlockCheckout(t *testing.T) {
 	if opened.Code != http.StatusOK || !strings.Contains(opened.Body.String(), `"is_unlocked":true`) || !strings.Contains(opened.Body.String(), `"/api/media/`) {
 		t.Fatalf("after unlock %s", opened.Body.String())
 	}
+	if rec := doJSON(handler, http.MethodPost, "/penpal/claim", map[string]string{"session_id": fake.LastID}); rec.Code == http.StatusOK {
+		t.Fatalf("an unlock checkout must not sign a guest in: %s", rec.Body.String())
+	}
 }
 
 func TestTooManyAttachmentsRejected(t *testing.T) {

@@ -72,6 +72,11 @@ func (p *pgRepo) GetCheckoutByPublicID(ctx context.Context, publicID string) (*d
 	return row, err
 }
 
+func (p *pgRepo) MarkCheckoutClaimed(ctx context.Context, id int64) (bool, error) {
+	n, err := p.q.MarkCheckoutClaimed(ctx, id)
+	return n > 0, err
+}
+
 func (p *pgRepo) ApplyEvent(ctx context.Context, ev billing.Event) (paidNotice, error) {
 	tx, err := p.pool.Begin(ctx)
 	if err != nil {

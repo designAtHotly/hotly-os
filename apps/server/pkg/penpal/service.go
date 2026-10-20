@@ -2,6 +2,9 @@ package penpal
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/mail"
 	"strings"
@@ -24,6 +27,7 @@ var (
 	ErrCreatorEmail          = errors.New("creator_email")
 	ErrPaymentPending        = errors.New("payment_pending")
 	ErrPaymentIncomplete     = errors.New("payment_incomplete")
+	ErrClaimExpired          = errors.New("claim_expired")
 	ErrNotFound              = errors.New("not_found")
 	ErrBlocked               = errors.New("blocked")
 	ErrNoAllowance           = errors.New("no_allowance")
@@ -45,6 +49,7 @@ type Repository interface {
 	SetCheckoutStripeSession(ctx context.Context, id int64, sessionID string) error
 	GetCheckoutByStripeSession(ctx context.Context, sessionID string) (*db.Checkout, error)
 	GetCheckoutByPublicID(ctx context.Context, publicID string) (*db.Checkout, error)
+	MarkCheckoutClaimed(ctx context.Context, id int64) (bool, error)
 	ApplyEvent(ctx context.Context, ev billing.Event) (paidNotice, error)
 	GuestChat(ctx context.Context, userID int64) (*GuestChat, error)
 	ListInbox(ctx context.Context) ([]InboxItem, error)
@@ -106,6 +111,10 @@ func NewService(cfg *config.Config, repo Repository, stripe billing.Gateway, mai
 	return &Service{cfg: cfg, repo: repo, stripe: stripe, mail: mail, blobs: blobs}
 }
 
+// claimWindow is how long after payment the Stripe success URL can sign the guest in.
+// Later, or from a second browser, the guest uses the email recovery link instead.
+const claimWindow = 30 * time.Minute
+
 type CheckoutInput struct {
 	Email             string
 	Message           string
@@ -114,27 +123,29 @@ type CheckoutInput struct {
 	CustomAmountCents int64
 }
 
-func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, error) {
+// StartCheckout returns the Stripe Checkout URL and a claim key for the handler to keep
+// in a short-lived cookie, so a repeat claim is only honoured from the paying browser.
+func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, string, error) {
 	if s.stripe == nil {
-		return "", ErrStripeNotConfigured
+		return "", "", ErrStripeNotConfigured
 	}
 	email := strings.TrimSpace(in.Email)
 	if email != "" {
 		if _, err := mail.ParseAddress(email); err != nil {
-			return "", ErrInvalidEmail
+			return "", "", ErrInvalidEmail
 		}
 		if strings.EqualFold(email, s.cfg.CreatorEmail) {
-			return "", ErrCreatorEmail
+			return "", "", ErrCreatorEmail
 		}
 	}
 	message := strings.TrimSpace(in.Message)
 	if message == "" {
-		return "", ErrMessageRequired
+		return "", "", ErrMessageRequired
 	}
 
 	offer := BuildOffer(s.cfg, nil)
 	if creator, err := s.repo.GetCreator(ctx); err != nil {
-		return "", err
+		return "", "", err
 	} else if creator != nil {
 		offer = BuildOffer(s.cfg, creator)
 	}
@@ -150,18 +161,18 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 	} else {
 		resolvedAmount, resolvedLimit, err := offer.ResolveOneTime(in.Tier, in.CustomAmountCents)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		amount = resolvedAmount
 		limit = resolvedLimit
 	}
 	if limit > 0 && utf8.RuneCountInString(message) > limit {
-		return "", ErrMessageTooLong
+		return "", "", ErrMessageTooLong
 	}
 
 	row, err := s.repo.CreateCheckout(ctx, kind, email, message, amount, int32(limit))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	publicID := publicIDString(row.PublicID)
 	origin := strings.TrimRight(s.cfg.PublicAppURL, "/")
@@ -178,12 +189,12 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 		Recurring:        in.Recurring,
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := s.repo.SetCheckoutStripeSession(ctx, row.ID, sess.ID); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return sess.URL, nil
+	return sess.URL, s.claimKeyFor(row), nil
 }
 
 func (s *Service) HandleWebhook(ctx context.Context, payload []byte, signature string) error {
@@ -202,7 +213,10 @@ func (s *Service) HandleWebhook(ctx context.Context, payload []byte, signature s
 	return nil
 }
 
-func (s *Service) Claim(ctx context.Context, sessionID string) (*db.Checkout, error) {
+// Claim signs a guest in after Stripe Checkout. It works once per checkout, within
+// claimWindow of payment; claimKey (from the checkout cookie) lets the same browser
+// claim again in that window, e.g. after a refresh.
+func (s *Service) Claim(ctx context.Context, sessionID, claimKey string) (*db.Checkout, error) {
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID == "" {
 		return nil, ErrNotFound
@@ -211,7 +225,8 @@ func (s *Service) Claim(ctx context.Context, sessionID string) (*db.Checkout, er
 	if err != nil {
 		return nil, err
 	}
-	if row == nil {
+	// Unlock checkouts are paid by a guest who is already signed in.
+	if row == nil || row.Kind == "paid_content" {
 		return nil, ErrNotFound
 	}
 	switch row.Status {
@@ -226,12 +241,28 @@ func (s *Service) Claim(ctx context.Context, sessionID string) (*db.Checkout, er
 		if chat != nil && chat.Conversation != nil && chat.Conversation.BlockedAt.Valid {
 			return nil, ErrBlocked
 		}
+		if !row.CompletedAt.Valid || time.Since(row.CompletedAt.Time) > claimWindow {
+			return nil, ErrClaimExpired
+		}
+		claimed, err := s.repo.MarkCheckoutClaimed(ctx, row.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !claimed && !hmac.Equal([]byte(claimKey), []byte(s.claimKeyFor(row))) {
+			return nil, ErrClaimExpired
+		}
 		return row, nil
 	case "pending":
 		return nil, ErrPaymentPending
 	default:
 		return nil, ErrPaymentIncomplete
 	}
+}
+
+func (s *Service) claimKeyFor(row *db.Checkout) string {
+	mac := hmac.New(sha256.New, []byte(s.cfg.SessionSecret))
+	mac.Write([]byte("penpal-claim:" + publicIDString(row.PublicID)))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func (s *Service) SendGuestMessage(ctx context.Context, userID int64, body string) (*db.Message, error) {

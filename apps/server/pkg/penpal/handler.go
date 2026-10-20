@@ -17,6 +17,13 @@ import (
 	"hotly-opensource/server/pkg/db"
 )
 
+// claimCookieName holds the claim key for the checkout this browser started. It outlives
+// a Stripe Checkout session (24h) plus the claim window.
+const (
+	claimCookieName = "hotly_checkout"
+	claimCookieTTL  = 24*time.Hour + claimWindow
+)
+
 type Handler struct {
 	cfg  *config.Config
 	svc  *Service
@@ -145,7 +152,7 @@ func (h *Handler) checkout(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_json"})
 		return
 	}
-	url, err := h.svc.StartCheckout(req.Context(), CheckoutInput{
+	url, claimKey, err := h.svc.StartCheckout(req.Context(), CheckoutInput{
 		Email:             body.Email,
 		Message:           body.Message,
 		Recurring:         body.Recurring,
@@ -156,6 +163,15 @@ func (h *Handler) checkout(w http.ResponseWriter, req *http.Request) {
 		writeCheckoutError(w, err)
 		return
 	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     claimCookieName,
+		Value:    claimKey,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   h.auth.CookieSecure(),
+		MaxAge:   int(claimCookieTTL.Seconds()),
+	})
 	writeJSON(w, http.StatusOK, map[string]string{"url": url})
 }
 
@@ -219,11 +235,17 @@ func (h *Handler) claim(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_json"})
 		return
 	}
-	row, err := h.svc.Claim(req.Context(), body.SessionID)
+	claimKey := ""
+	if c, err := req.Cookie(claimCookieName); err == nil {
+		claimKey = c.Value
+	}
+	row, err := h.svc.Claim(req.Context(), body.SessionID, claimKey)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrPaymentPending):
 			writeJSON(w, http.StatusConflict, map[string]string{"error": "payment_pending"})
+		case errors.Is(err, ErrClaimExpired):
+			writeJSON(w, http.StatusGone, map[string]string{"error": "claim_expired", "message": "This checkout link has already been used. Get a sign-in link by email instead."})
 		case errors.Is(err, ErrBlocked):
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "blocked"})
 		case errors.Is(err, ErrPaymentIncomplete), errors.Is(err, ErrNotFound):

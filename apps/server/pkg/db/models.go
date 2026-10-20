@@ -33,6 +33,7 @@ type Checkout struct {
 	CreatedAt               pgtype.Timestamptz `json:"created_at"`
 	CompletedAt             pgtype.Timestamptz `json:"completed_at"`
 	TargetMessageID         pgtype.Int8        `json:"target_message_id"`
+	ClaimedAt               pgtype.Timestamptz `json:"claimed_at"`
 }
 
 type ContentUnlock struct {

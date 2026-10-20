@@ -136,7 +136,7 @@ func (s *Service) StartUnlock(ctx context.Context, guest auth.Principal, message
 		GuestEmail:       chat.GuestEmail,
 		AmountCents:      msg.UnlockPriceCents.Int64,
 		ProductName:      "Unlock media",
-		SuccessURL:       origin + "/chat?unlock=true&session_id={CHECKOUT_SESSION_ID}",
+		SuccessURL:       origin + "/chat?unlock=true",
 		CancelURL:        origin + "/chat?canceled=true",
 	})
 	if err != nil {

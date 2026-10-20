@@ -103,6 +103,13 @@ SET status = 'completed',
 WHERE id = $1
   AND status = 'pending';
 
+-- name: MarkCheckoutClaimed :execrows
+UPDATE checkouts
+SET claimed_at = now()
+WHERE id = $1
+  AND status = 'completed'
+  AND claimed_at IS NULL;
+
 -- name: SetCheckoutStatus :execrows
 UPDATE checkouts
 SET status = $2

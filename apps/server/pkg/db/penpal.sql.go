@@ -45,7 +45,7 @@ INSERT INTO checkouts (
     guest_user_id
 )
 VALUES ($1, $2, $3, $4, 'usd', $5, $6, $7)
-RETURNING id, public_id, kind, status, guest_email, guest_user_id, initial_message, amount_cents, currency, character_limit, stripe_checkout_session_id, created_at, completed_at, target_message_id
+RETURNING id, public_id, kind, status, guest_email, guest_user_id, initial_message, amount_cents, currency, character_limit, stripe_checkout_session_id, created_at, completed_at, target_message_id, claimed_at
 `
 
 type CreateCheckoutParams struct {
@@ -84,6 +84,7 @@ func (q *Queries) CreateCheckout(ctx context.Context, arg CreateCheckoutParams) 
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.TargetMessageID,
+		&i.ClaimedAt,
 	)
 	return &i, err
 }
@@ -146,7 +147,7 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (*
 }
 
 const getCheckoutByPublicID = `-- name: GetCheckoutByPublicID :one
-SELECT id, public_id, kind, status, guest_email, guest_user_id, initial_message, amount_cents, currency, character_limit, stripe_checkout_session_id, created_at, completed_at, target_message_id
+SELECT id, public_id, kind, status, guest_email, guest_user_id, initial_message, amount_cents, currency, character_limit, stripe_checkout_session_id, created_at, completed_at, target_message_id, claimed_at
 FROM checkouts
 WHERE public_id = $1
 `
@@ -169,12 +170,13 @@ func (q *Queries) GetCheckoutByPublicID(ctx context.Context, publicID pgtype.UUI
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.TargetMessageID,
+		&i.ClaimedAt,
 	)
 	return &i, err
 }
 
 const getCheckoutByStripeSessionID = `-- name: GetCheckoutByStripeSessionID :one
-SELECT id, public_id, kind, status, guest_email, guest_user_id, initial_message, amount_cents, currency, character_limit, stripe_checkout_session_id, created_at, completed_at, target_message_id
+SELECT id, public_id, kind, status, guest_email, guest_user_id, initial_message, amount_cents, currency, character_limit, stripe_checkout_session_id, created_at, completed_at, target_message_id, claimed_at
 FROM checkouts
 WHERE stripe_checkout_session_id = $1
 `
@@ -197,6 +199,7 @@ func (q *Queries) GetCheckoutByStripeSessionID(ctx context.Context, stripeChecko
 		&i.CreatedAt,
 		&i.CompletedAt,
 		&i.TargetMessageID,
+		&i.ClaimedAt,
 	)
 	return &i, err
 }
@@ -393,6 +396,38 @@ func (q *Queries) ListMessagesByConversation(ctx context.Context, conversationID
 	return items, nil
 }
 
+const markCheckoutClaimed = `-- name: MarkCheckoutClaimed :execrows
+UPDATE checkouts
+SET claimed_at = now()
+WHERE id = $1
+  AND status = 'completed'
+  AND claimed_at IS NULL
+`
+
+func (q *Queries) MarkCheckoutClaimed(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.Exec(ctx, markCheckoutClaimed, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setCheckoutGuestEmail = `-- name: SetCheckoutGuestEmail :exec
+UPDATE checkouts
+SET guest_email = $2
+WHERE id = $1
+`
+
+type SetCheckoutGuestEmailParams struct {
+	ID         int64  `json:"id"`
+	GuestEmail string `json:"guest_email"`
+}
+
+func (q *Queries) SetCheckoutGuestEmail(ctx context.Context, arg SetCheckoutGuestEmailParams) error {
+	_, err := q.db.Exec(ctx, setCheckoutGuestEmail, arg.ID, arg.GuestEmail)
+	return err
+}
+
 const setCheckoutStatus = `-- name: SetCheckoutStatus :execrows
 UPDATE checkouts
 SET status = $2
@@ -426,22 +461,6 @@ type SetCheckoutStripeSessionParams struct {
 
 func (q *Queries) SetCheckoutStripeSession(ctx context.Context, arg SetCheckoutStripeSessionParams) error {
 	_, err := q.db.Exec(ctx, setCheckoutStripeSession, arg.ID, arg.StripeCheckoutSessionID)
-	return err
-}
-
-const setCheckoutGuestEmail = `-- name: SetCheckoutGuestEmail :exec
-UPDATE checkouts
-SET guest_email = $2
-WHERE id = $1
-`
-
-type SetCheckoutGuestEmailParams struct {
-	ID         int64  `json:"id"`
-	GuestEmail string `json:"guest_email"`
-}
-
-func (q *Queries) SetCheckoutGuestEmail(ctx context.Context, arg SetCheckoutGuestEmailParams) error {
-	_, err := q.db.Exec(ctx, setCheckoutGuestEmail, arg.ID, arg.GuestEmail)
 	return err
 }
 

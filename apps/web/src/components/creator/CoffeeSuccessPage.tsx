@@ -27,6 +27,13 @@ async function wait(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Stripe's session_id signs the guest in once; keep it out of history after use.
+function removeSessionIdFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("session_id");
+  window.history.replaceState(window.history.state, "", url);
+}
+
 export default function CoffeeSuccessPage({
   creator,
 }: CoffeeSuccessPageProps) {
@@ -43,23 +50,34 @@ export default function CoffeeSuccessPage({
     window.location.href = getCreatorVariantPage(creator.username, variant);
   };
 
+  const openChat = () => {
+    removeSessionIdFromUrl();
+    window.location.href = getCreatorChatPage(creator.username);
+  };
+
   const handleGoToChat = async () => {
     const sessionId = searchParams.get("session_id");
+    // Back from the chat after claiming: the chat page loads, or offers an email sign-in link.
     if (!sessionId) {
-      alert("Payment is still confirming. Refresh this page in a moment.");
+      openChat();
       return;
     }
 
     for (let i = 0; i < 15; i++) {
       try {
         await getCheckoutToken(sessionId);
-        window.location.href = getCreatorChatPage(creator.username);
+        openChat();
         return;
       } catch (error) {
         captureError(error);
         if (error instanceof ApiError && error.status === 409) {
           await wait(1000);
           continue;
+        }
+        // 410: already used or too old. The chat page offers an email sign-in link.
+        if (error instanceof ApiError && error.status === 410) {
+          openChat();
+          return;
         }
         break;
       }
