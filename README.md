@@ -2,7 +2,7 @@
 
 **A paid inbox for one creator, on your own server.** Fans pay to send a note or subscribe weekly. The creator replies from one inbox. Stripe pays the creator directly.
 
-![A guest writes a note and pays, then the creator replies from the inbox](docs/demo.gif)
+![A fan pays to send a note, the creator replies from the inbox with a photo priced to unlock, and the fan unlocks it](docs/demo.gif)
 
 - **See it:** [hotly.com](https://hotly.com/?utm_source=github&utm_medium=readme&utm_campaign=os-launch)
 - **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
