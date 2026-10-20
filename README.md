@@ -4,9 +4,9 @@
 
 ![A guest writes a note and pays, then the creator replies from the inbox](docs/demo.gif)
 
-- **See it:** [hotly.com](https://hotly.com)
+- **See it:** [hotly.com](https://hotly.com/?utm_source=github&utm_medium=readme&utm_campaign=os-launch)
 - **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
-- **Don't want a server?** [We host it](https://hotly.com/hosted) for $5.99/mo + 20%
+- **Don't want a server?** [We host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) from $5.99/mo + 20%, 30 days free
 
 Maintained by the Hotly team, with a release about once a month. Releases are tagged; pin one.
 
