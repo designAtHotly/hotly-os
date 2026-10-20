@@ -361,7 +361,7 @@ export default function SettingsModal({
               </label>
               <label className="flex items-center gap-3">
                 <span className="w-32 shrink-0 text-xs text-stone-500">
-                  Weekly Penpal
+                  Weekly
                 </span>
                 <span className="text-sm text-stone-400">$</span>
                 <input

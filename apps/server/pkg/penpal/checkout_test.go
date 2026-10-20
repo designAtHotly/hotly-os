@@ -139,7 +139,7 @@ func TestWebhookUsesStripeCollectedEmail(t *testing.T) {
 
 func TestWebhookRejectsCreatorEmail(t *testing.T) {
 	handler, fake, mem, _ := testAPI()
-	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 250, 1500, 1); err != nil {
+	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 1000, 1500, 250, 1500, 1); err != nil {
 		t.Fatal(err)
 	}
 	rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
@@ -214,6 +214,28 @@ func TestCheckoutChargesNamedTiersAndIgnoresClientAmount(t *testing.T) {
 	}
 	if fake.Last.AmountCents != 1500 {
 		t.Fatalf("1000-char tier must charge $15, got %d", fake.Last.AmountCents)
+	}
+}
+
+func TestCreatorTierPricesComeFromSignInSettings(t *testing.T) {
+	handler, fake, mem, _ := testAPI()
+	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 700, 1100, 1900, 250, 1500, 1); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		tier string
+		want int64
+	}{{"250", 700}, {"500", 1100}, {"1000", 1900}} {
+		rec := doJSON(handler, http.MethodPost, "/penpal/checkout", map[string]any{
+			"message": "A note.",
+			"tier":    tc.tier,
+		})
+		if rec.Code != http.StatusOK {
+			t.Fatalf("tier %s: %d %s", tc.tier, rec.Code, rec.Body.String())
+		}
+		if fake.Last.AmountCents != tc.want {
+			t.Fatalf("tier %s must charge %d, got %d", tc.tier, tc.want, fake.Last.AmountCents)
+		}
 	}
 }
 
@@ -395,7 +417,7 @@ func TestCreatorCanReplyToPaidConversation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 250, 1500, creator.ID); err != nil {
+	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 1000, 1500, 250, 1500, creator.ID); err != nil {
 		t.Fatal(err)
 	}
 	token, expires, err := authSvc.IssueSession(context.Background(), creator.ID)
@@ -507,7 +529,7 @@ func creatorSession(t *testing.T, mem *Mem, authSvc *auth.Service) *http.Cookie 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 250, 1500, creator.ID); err != nil {
+	if err := mem.UpsertCreatorUser(context.Background(), "creator@example.com", "Ada", "coffee", 500, 1000, 1500, 250, 1500, creator.ID); err != nil {
 		t.Fatal(err)
 	}
 	token, expires, err := authSvc.IssueSession(context.Background(), creator.ID)

@@ -113,6 +113,8 @@ func main() {
 			DisplayName:           cfg.CreatorDisplayName,
 			SupportItem:           cfg.SupportItem,
 			OneTimePriceCents:     cfg.OneTimePriceCents,
+			Price500Cents:         cfg.Price500Cents,
+			Price1000Cents:        cfg.Price1000Cents,
 			OneTimeCharacterLimit: int32(cfg.OneTimeCharacterLimit),
 			WeeklyPriceCents:      cfg.WeeklyPriceCents,
 		},

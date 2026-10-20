@@ -17,7 +17,7 @@ function PenpalBody() {
   useEffect(() => {
     loadPenpalCreator()
       .then(setData)
-      .catch(() => setError("Could not load this Penpal page."));
+      .catch(() => setError("Could not load this page."));
   }, []);
 
   if (error) {

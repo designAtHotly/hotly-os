@@ -34,7 +34,7 @@ export function generateMetadata(): Metadata {
       default: "Hotly",
       template: "%s · Hotly",
     },
-    description: "A tip jar that writes back.",
+    description: "Pay to send a note, priced by length, and get a personal reply.",
     openGraph: {
       type: "website",
       siteName: "Hotly",

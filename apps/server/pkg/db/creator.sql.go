@@ -166,12 +166,14 @@ INSERT INTO creators (
     description,
     support_item,
     one_time_price_cents,
+    price_500_cents,
+    price_1000_cents,
     one_time_character_limit,
     weekly_price_cents,
     weekly_allowance_chars,
     user_id
 )
-VALUES ($1, $2, '', $3, $4, $5, $6, 2000, $7)
+VALUES ($1, $2, '', $3, $4, $5, $6, $7, $8, 2000, $9)
 ON CONFLICT (singleton) DO UPDATE
 SET user_id = EXCLUDED.user_id,
     email = EXCLUDED.email,
@@ -184,6 +186,8 @@ type UpsertCreatorUserParams struct {
 	DisplayName           string      `json:"display_name"`
 	SupportItem           string      `json:"support_item"`
 	OneTimePriceCents     int64       `json:"one_time_price_cents"`
+	Price500Cents         int64       `json:"price_500_cents"`
+	Price1000Cents        int64       `json:"price_1000_cents"`
 	OneTimeCharacterLimit int32       `json:"one_time_character_limit"`
 	WeeklyPriceCents      int64       `json:"weekly_price_cents"`
 	UserID                pgtype.Int8 `json:"user_id"`
@@ -195,6 +199,8 @@ func (q *Queries) UpsertCreatorUser(ctx context.Context, arg UpsertCreatorUserPa
 		arg.DisplayName,
 		arg.SupportItem,
 		arg.OneTimePriceCents,
+		arg.Price500Cents,
+		arg.Price1000Cents,
 		arg.OneTimeCharacterLimit,
 		arg.WeeklyPriceCents,
 		arg.UserID,

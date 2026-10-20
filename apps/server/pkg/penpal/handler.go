@@ -338,7 +338,7 @@ func (h *Handler) guestSend(w http.ResponseWriter, req *http.Request) {
 		case errors.Is(err, ErrBlocked):
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "blocked"})
 		case errors.Is(err, ErrNoAllowance):
-			writeJSON(w, http.StatusPaymentRequired, map[string]string{"error": "no_allowance", "message": "Buy another note or start weekly Penpal to send more."})
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{"error": "no_allowance", "message": "Buy another note or subscribe weekly to send more."})
 		case errors.Is(err, ErrAllowanceExceeded):
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "allowance_exceeded", "message": "That would go over this week's 2,000 characters."})
 		case errors.Is(err, ErrNotFound):

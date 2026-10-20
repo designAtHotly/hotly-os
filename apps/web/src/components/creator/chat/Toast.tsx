@@ -9,10 +9,10 @@ interface ToastProps {
   artistName: string;
   onDismiss: () => void;
   message?: string; // Optional custom message for error toasts
-  variant?: string;
+  welcomeTitle?: string;
 }
 
-export default function Toast({ type, artistName, onDismiss, message, variant = "Penpal" }: ToastProps) {
+export default function Toast({ type, artistName, onDismiss, message, welcomeTitle = "You're subscribed!" }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const exitTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -50,7 +50,7 @@ export default function Toast({ type, artistName, onDismiss, message, variant = 
     },
     subscribed: {
       emoji: "💛",
-      title: `Welcome, ${variant}`,
+      title: welcomeTitle,
       subtitle: `You and ${firstName} are now connected`,
     },
     error: {

@@ -139,14 +139,14 @@ func (s *Service) StartCheckout(ctx context.Context, in CheckoutInput) (string, 
 		offer = BuildOffer(s.cfg, creator)
 	}
 	kind := "one_time_message"
-	product := offer.DisplayName + " Penpal note"
+	product := offer.DisplayName + " note"
 	amount := offer.Price250Cents
 	limit := limit250
 	if in.Recurring {
 		kind = "weekly_subscription"
 		amount = offer.WeeklyPriceCents
 		limit = offer.WeeklyAllowanceChars
-		product = offer.DisplayName + " weekly Penpal"
+		product = offer.DisplayName + " weekly subscription"
 	} else {
 		resolvedAmount, resolvedLimit, err := offer.ResolveOneTime(in.Tier, in.CustomAmountCents)
 		if err != nil {

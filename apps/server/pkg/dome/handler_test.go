@@ -61,7 +61,7 @@ func sessionFor(t *testing.T, store auth.Store, authSvc *auth.Service, uid, emai
 		t.Fatal(err)
 	}
 	if email == "creator@example.com" {
-		if err := store.UpsertCreatorUser(context.Background(), email, name, "coffee", 500, 250, 1500, u.ID); err != nil {
+		if err := store.UpsertCreatorUser(context.Background(), email, name, "coffee", 500, 1000, 1500, 250, 1500, u.ID); err != nil {
 			t.Fatal(err)
 		}
 	}

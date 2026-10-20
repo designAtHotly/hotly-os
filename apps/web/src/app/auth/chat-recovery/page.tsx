@@ -66,7 +66,7 @@ function RecoveryForm() {
 
   return (
     <main className="w-full max-w-md rounded-[32px] bg-white p-8 shadow-[0_25px_80px_-12px_rgba(0,0,0,0.12)]">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Penpal</p>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Hotly</p>
       <h1 className="mb-2 text-[28px] font-bold tracking-[-0.03em] text-gray-900">Recover your chat</h1>
       {status === "consuming" ? (
         <p className="text-[15px] leading-relaxed text-gray-500">Opening your conversation…</p>
@@ -108,7 +108,7 @@ function RecoveryForm() {
       )}
       <p className="mt-6 text-center text-sm text-gray-400">
         <Link href="/" className="underline-offset-2 hover:underline">
-          Back to Penpal
+          Back to the page
         </Link>
       </p>
     </main>

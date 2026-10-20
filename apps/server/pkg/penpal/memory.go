@@ -186,7 +186,7 @@ func (m *Mem) GetCreatorUserID(_ context.Context) (*auth.CreatorRow, error) {
 	return &cp, nil
 }
 
-func (m *Mem) UpsertCreatorUser(_ context.Context, email, displayName, supportItem string, oneTimeCents int64, oneTimeLimit int32, weeklyCents, userID int64) error {
+func (m *Mem) UpsertCreatorUser(_ context.Context, email, displayName, supportItem string, oneTimeCents, price500Cents, price1000Cents int64, oneTimeLimit int32, weeklyCents, userID int64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.creator = &auth.CreatorRow{UserID: userID, Linked: true}
@@ -207,6 +207,12 @@ func (m *Mem) UpsertCreatorUser(_ context.Context, email, displayName, supportIt
 	}
 	if oneTimeCents > 0 {
 		m.creatorRow.OneTimePriceCents = oneTimeCents
+	}
+	if price500Cents > 0 {
+		m.creatorRow.Price500Cents = price500Cents
+	}
+	if price1000Cents > 0 {
+		m.creatorRow.Price1000Cents = price1000Cents
 	}
 	if oneTimeLimit > 0 {
 		m.creatorRow.OneTimeCharacterLimit = oneTimeLimit

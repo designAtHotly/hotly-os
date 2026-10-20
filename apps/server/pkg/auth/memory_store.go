@@ -118,7 +118,7 @@ func (m *memStore) GetCreatorUserID(_ context.Context) (*CreatorRow, error) {
 	return &cp, nil
 }
 
-func (m *memStore) UpsertCreatorUser(_ context.Context, _, _, _ string, _ int64, _ int32, _, userID int64) error {
+func (m *memStore) UpsertCreatorUser(_ context.Context, _, _, _ string, _, _, _ int64, _ int32, _, userID int64) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.creator = &CreatorRow{UserID: userID, Linked: true}

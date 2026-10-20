@@ -46,7 +46,7 @@ import {
 import type {
   BrandVariant} from "@/lib/utils/variant";
 import {
-  getBadgeLabel,
+  getWelcomeMessage,
   DEFAULT_VARIANT,
   DEFAULT_SUPPORT_THEME,
 } from "@/lib/utils/variant";
@@ -98,7 +98,7 @@ export default function ChatPage({ pricing, creator }: ChatPageProps) {
   const variant = (creator.variant as BrandVariant) || DEFAULT_VARIANT;
 
   // Variant-specific values
-  const badgeLabel = getBadgeLabel(variant);
+  const welcomeTitle = getWelcomeMessage(variant);
 
   // Server state
   const [chat, setChat] = useState<CreatorChatResponse | null>(null);
@@ -267,7 +267,7 @@ export default function ChatPage({ pricing, creator }: ChatPageProps) {
             type: "error",
             message:
               error.message ||
-              "Buy another note or start weekly Penpal to send more.",
+              "Buy another note or subscribe weekly to send more.",
           });
         } else if (error.status === 400) {
           // Validation failure (e.g. over the length cap). Retrying an identical
@@ -700,7 +700,7 @@ export default function ChatPage({ pricing, creator }: ChatPageProps) {
             artistName={artistName}
             onDismiss={() => setToast(null)}
             message={toast.message}
-            variant={badgeLabel}
+            welcomeTitle={welcomeTitle}
           />
         )}
 

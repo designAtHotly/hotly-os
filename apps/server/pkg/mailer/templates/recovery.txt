@@ -1,6 +1,6 @@
-Subject: Reopen your Penpal chat
+Subject: Reopen your chat
 
-You asked for a way back into your Penpal conversation. Open chat on this instance:
+You asked for a way back into your conversation. Open chat on this instance:
 
 {{LINK}}
 

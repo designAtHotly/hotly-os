@@ -37,7 +37,7 @@ export function TabsBar({
   onSortChange,
   onToggleSortDropdown,
   onCloseSortDropdown,
-  variant = "Penpals",
+  variant = "Subscribers",
 }: TabsBarProps) {
   return (
     <div className="flex items-center justify-between mb-4">

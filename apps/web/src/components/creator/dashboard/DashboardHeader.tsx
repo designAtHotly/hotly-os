@@ -14,7 +14,7 @@ const variantStyles: Record<BrandVariant, { modalIconBg: string; emoji: string; 
   penpal: {
     modalIconBg: "bg-amber-100", emoji: "\u{1F48C}",
     copyBg: "bg-amber-500", copyHover: "hover:bg-amber-600",
-    subtitle: "Let your fans become your penpal",
+    subtitle: "Let people pay to write to you",
   },
   vipfan: {
     modalIconBg: "bg-rose-100", emoji: "\u{2B50}",
@@ -49,7 +49,7 @@ export function DashboardHeader({ shareLink, onLogout, variant = DEFAULT_VARIANT
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">{label} Chat</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
         <div className="flex items-center gap-3">
           {onOpenSettings && (
             <button
@@ -101,12 +101,12 @@ export function DashboardHeader({ shareLink, onLogout, variant = DEFAULT_VARIANT
               <div className={`w-12 h-12 rounded-full ${styles.modalIconBg} flex items-center justify-center mx-auto mb-3`}>
                 <span className="text-2xl">{styles.emoji}</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Share Your {label} Page</h3>
+              <h3 className="text-xl font-bold text-gray-900">Share your page</h3>
               <p className="text-sm text-gray-500 mt-1">{styles.subtitle}</p>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <label className="block text-xs font-medium text-gray-500 mb-2">Your penpal link</label>
+              <label className="block text-xs font-medium text-gray-500 mb-2">Your link</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"

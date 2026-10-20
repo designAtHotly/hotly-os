@@ -229,7 +229,7 @@ Enable **only** these events (the API ignores others):
 - `invoice.paid`
 - `invoice.payment_succeeded`
 
-Do not turn on “listen to all events.” One-time notes and paid unlocks need the Checkout session events; weekly Penpal needs the subscription and invoice events.
+Do not turn on “listen to all events.” One-time notes and paid unlocks need the Checkout session events; weekly subscriptions need the subscription and invoice events.
 
 ### SendGrid (when you have a key)
 
@@ -252,8 +252,8 @@ Startup logs `sendgrid=true` when configured. Stripe webhooks still apply if Sen
 Prove the three checked-in templates (no extra mail types):
 
 1. Recovery: on `/auth/chat-recovery`, request a link for a guest email that already has a conversation. Open the 24-hour single-use link. A second use must fail.
-2. Creator notice: complete a test-mode one-time note or weekly Checkout; the configured `CREATOR_EMAIL` gets “New Penpal note/subscription.”
-3. Guest notice: reply from `/creator/inbox`; the guest email gets “You have a new Penpal reply.”
+2. Creator notice: complete a test-mode one-time note or weekly Checkout; the configured `CREATOR_EMAIL` gets “New paid note/subscription.”
+3. Guest notice: reply from `/creator/inbox`; the guest email gets “You have a new reply.”
 
 Templates live in `apps/server/pkg/mailer/templates/` (generated from [`emails/`](../emails/README.md); do not hand-edit the HTML).
 

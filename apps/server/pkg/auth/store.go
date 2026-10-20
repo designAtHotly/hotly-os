@@ -94,12 +94,14 @@ func (p *pgStore) GetCreatorUserID(ctx context.Context) (*CreatorRow, error) {
 	return row, nil
 }
 
-func (p *pgStore) UpsertCreatorUser(ctx context.Context, email, displayName, supportItem string, oneTimeCents int64, oneTimeLimit int32, weeklyCents, userID int64) error {
+func (p *pgStore) UpsertCreatorUser(ctx context.Context, email, displayName, supportItem string, oneTimeCents, price500Cents, price1000Cents int64, oneTimeLimit int32, weeklyCents, userID int64) error {
 	_, err := p.q.UpsertCreatorUser(ctx, db.UpsertCreatorUserParams{
 		Email:                 email,
 		DisplayName:           displayName,
 		SupportItem:           supportItem,
 		OneTimePriceCents:     oneTimeCents,
+		Price500Cents:         price500Cents,
+		Price1000Cents:        price1000Cents,
 		OneTimeCharacterLimit: oneTimeLimit,
 		WeeklyPriceCents:      weeklyCents,
 		UserID:                pgtype.Int8{Int64: userID, Valid: true},

@@ -10,7 +10,7 @@
 
 Maintained by the Hotly team, with a release about once a month. Releases are tagged; pin one.
 
-Self-hosted Hotly for **exactly one creator**. Apache License 2.0. Guests buy a one-time note or a weekly Penpal subscription; the creator replies from an inbox, including optional image/video (free or paid unlock). `/dome` is the retained community. Payments go to the operator’s Stripe account.
+Self-hosted Hotly for **exactly one creator**. Apache License 2.0. Guests buy a one-time note or a weekly subscription; the creator replies from an inbox, including optional image/video (free or paid unlock). `/dome` is the retained community. Payments go to the operator’s Stripe account.
 
 Browsers land on `/`. The public origin is Caddy (`/` + `/api`), not `:3000` or `:8080`.
 
@@ -102,7 +102,7 @@ Compose starts PostgreSQL 18, runs `db/migrations` before the API, then the Go A
 | `/auth/firebase` | Google sign-in |
 | `/auth/chat-recovery` | Guest recovery request and consume |
 
-USD only. Defaults: one-time notes **$5 / 250**, **$10 / 500**, **$15 / 1,000** characters (`ONE_TIME_PRICE_CENTS`, `ONE_TIME_PRICE_500_CENTS`, `ONE_TIME_PRICE_1000_CENTS`); Custom must be at least $1 above the 1,000-character price; weekly Penpal **$15** / 2,000 characters (`WEEKLY_PRICE_CENTS=1500`). Named-tier Checkout ignores browser amount and currency.
+USD only. Defaults: one-time notes **$5 / 250**, **$10 / 500**, **$15 / 1,000** characters (`ONE_TIME_PRICE_CENTS`, `ONE_TIME_PRICE_500_CENTS`, `ONE_TIME_PRICE_1000_CENTS`); Custom must be at least $1 above the 1,000-character price; weekly subscription **$15** / 2,000 characters (`WEEKLY_PRICE_CENTS=1500`). These env values seed the creator row the first time the creator signs in; after that, prices are edited in creator settings. Named-tier Checkout ignores browser amount and currency.
 
 ## Apps
 

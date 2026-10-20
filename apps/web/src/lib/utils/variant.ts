@@ -7,7 +7,7 @@ export function getBadgeLabel(variant: BrandVariant): string {
     case "velvetrope":
       return "Velvet Rope";
     default:
-      return "Penpal";
+      return "Weekly";
   }
 }
 
@@ -18,7 +18,7 @@ export function getRecurringLabel(variant: BrandVariant): string {
     case "velvetrope":
       return "Enter Velvet Rope experience";
     default:
-      return "Become a Penpal";
+      return "Subscribe weekly";
   }
 }
 
@@ -29,7 +29,7 @@ export function getWelcomeMessage(variant: BrandVariant): string {
     case "velvetrope":
       return "Welcome to the Velvet Rope Experience!";
     default:
-      return "Welcome, Penpal!";
+      return "You're subscribed!";
   }
 }
 
@@ -40,7 +40,7 @@ export function getPluralLabel(variant: BrandVariant): string {
     case "velvetrope":
       return "Velvet Rope";
     default:
-      return "Penpals";
+      return "Subscribers";
   }
 }
 

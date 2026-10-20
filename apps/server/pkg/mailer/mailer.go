@@ -35,7 +35,7 @@ func Render(name string, vars map[string]string) (subject, text, html string, er
 		txt = strings.ReplaceAll(txt, "{{"+k+"}}", v)
 		html = strings.ReplaceAll(html, "{{"+k+"}}", v)
 	}
-	subject = "Penpal"
+	subject = "Hotly"
 	if i := strings.Index(txt, "\n"); i > 0 && strings.HasPrefix(txt, "Subject: ") {
 		subject = strings.TrimSpace(txt[len("Subject: "):i])
 		txt = strings.TrimSpace(txt[i+1:])

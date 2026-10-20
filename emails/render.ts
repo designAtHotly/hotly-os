@@ -22,9 +22,9 @@ interface Spec {
 const specs: Spec[] = [
   {
     file: "recovery",
-    subject: "Reopen your Penpal chat",
+    subject: "Reopen your chat",
     text: [
-      "You asked for a way back into your Penpal conversation. Open chat on this instance:",
+      "You asked for a way back into your conversation. Open chat on this instance:",
       "{{LINK}}",
       "The link works once and expires in 24 hours. If you did not request this, you can ignore the email.",
       "Powered by Hotly",
@@ -34,9 +34,9 @@ const specs: Spec[] = [
   },
   {
     file: "creator_paid",
-    subject: "New Penpal {{KIND}}",
+    subject: "New paid {{KIND}}",
     text: [
-      "Someone just sent you a Penpal {{KIND}}. Open your inbox to read it and write back.",
+      "Someone just sent you a paid {{KIND}}. Open your inbox to read it and write back.",
       "{{INBOX}}",
       "Powered by Hotly",
       "https://hotly.com",
@@ -45,9 +45,9 @@ const specs: Spec[] = [
   },
   {
     file: "guest_reply",
-    subject: "You have a new Penpal reply",
+    subject: "You have a new reply",
     text: [
-      "There is a new reply in your Penpal conversation. Open chat on this instance to read it.",
+      "There is a new reply in your conversation. Open chat on this instance to read it.",
       "{{CHAT}}",
       "Powered by Hotly",
       "https://hotly.com",

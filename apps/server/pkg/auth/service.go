@@ -37,7 +37,7 @@ type Store interface {
 	CreateUser(ctx context.Context, uid, email, name string) (*User, error)
 	UpdateUserFirebase(ctx context.Context, id int64, uid, name string) error
 	GetCreatorUserID(ctx context.Context) (*CreatorRow, error)
-	UpsertCreatorUser(ctx context.Context, email, displayName, supportItem string, oneTimeCents int64, oneTimeLimit int32, weeklyCents, userID int64) error
+	UpsertCreatorUser(ctx context.Context, email, displayName, supportItem string, oneTimeCents, price500Cents, price1000Cents int64, oneTimeLimit int32, weeklyCents, userID int64) error
 	RevokeSessionsForUser(ctx context.Context, userID int64) error
 	CreateSession(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) (*Session, error)
 	GetValidSession(ctx context.Context, tokenHash string) (*Session, error)
@@ -49,6 +49,8 @@ type CreatorSettings struct {
 	DisplayName           string
 	SupportItem           string
 	OneTimePriceCents     int64
+	Price500Cents         int64
+	Price1000Cents        int64
 	OneTimeCharacterLimit int32
 	WeeklyPriceCents      int64
 }
@@ -112,7 +114,7 @@ func (s *Service) Exchange(ctx context.Context, idToken string) (rawToken string
 		if display == "" {
 			display = ident.Name
 		}
-		if err := s.store.UpsertCreatorUser(ctx, s.creator.Email, display, s.creator.SupportItem, s.creator.OneTimePriceCents, s.creator.OneTimeCharacterLimit, s.creator.WeeklyPriceCents, user.ID); err != nil {
+		if err := s.store.UpsertCreatorUser(ctx, s.creator.Email, display, s.creator.SupportItem, s.creator.OneTimePriceCents, s.creator.Price500Cents, s.creator.Price1000Cents, s.creator.OneTimeCharacterLimit, s.creator.WeeklyPriceCents, user.ID); err != nil {
 			return "", Principal{}, time.Time{}, err
 		}
 	}

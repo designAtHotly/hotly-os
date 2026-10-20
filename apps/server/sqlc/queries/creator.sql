@@ -24,12 +24,14 @@ INSERT INTO creators (
     description,
     support_item,
     one_time_price_cents,
+    price_500_cents,
+    price_1000_cents,
     one_time_character_limit,
     weekly_price_cents,
     weekly_allowance_chars,
     user_id
 )
-VALUES ($1, $2, '', $3, $4, $5, $6, 2000, $7)
+VALUES ($1, $2, '', $3, $4, $5, $6, $7, $8, 2000, $9)
 ON CONFLICT (singleton) DO UPDATE
 SET user_id = EXCLUDED.user_id,
     email = EXCLUDED.email,

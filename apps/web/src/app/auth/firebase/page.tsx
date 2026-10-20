@@ -79,7 +79,7 @@ export default function FirebaseAuthPage() {
       <main className="relative w-full max-w-md rounded-[32px] bg-white p-8 shadow-[0_25px_80px_-12px_rgba(0,0,0,0.12)]">
         <p className="mb-2 text-xs font-semibold tracking-wide text-ink-faint uppercase">
           <Link href="/" className="hover:text-ink">
-            Penpal
+            Hotly
           </Link>
         </p>
         <h1 className="mb-2 text-[28px] font-bold tracking-[-0.03em] text-gray-900">Sign in</h1>

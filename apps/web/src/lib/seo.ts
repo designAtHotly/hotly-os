@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 
 import type { PenpalOffer } from "@/lib/penpal/offer";
 import { publicAppUrl, publicUrl } from "@/lib/site";
-import { getThemeLabel, type SupportTheme } from "@/types/coffee.types";
 
-const PRODUCT_DESCRIPTION = "A tip jar that writes back.";
+const PRODUCT_DESCRIPTION = "Pay to send a note, priced by length, and get a personal reply.";
 
 /**
  * Tab / home-screen chrome copied from live Hotly public files.
@@ -41,10 +40,6 @@ export function firstName(displayName: string): string {
     return "Creator";
   }
   return trimmed.split(/\s+/)[0] ?? trimmed;
-}
-
-function supportLabel(item: string | undefined): string {
-  return getThemeLabel(item as SupportTheme | undefined).toLowerCase();
 }
 
 function ogImage(avatarPath: string | undefined): string | undefined {
@@ -109,7 +104,7 @@ export function fallbackMetadata(): Metadata {
 }
 
 /**
- * Penpal landing card: “Buy {first} a {coffee}” plus bio.
+ * Creator landing card: “Write to {first}” plus bio.
  *
  * @param offer - Public Penpal offer JSON, or null when the API is down.
  * @returns Metadata for `/`.
@@ -119,9 +114,8 @@ export function penpalMetadata(offer: PenpalOffer | null): Metadata {
     return fallbackMetadata();
   }
   const first = firstName(offer.display_name);
-  const item = supportLabel(offer.support_item);
-  const title = `Buy ${first} a ${item} · Hotly`;
-  const description = offer.description?.trim() || `Support ${first} with a ${item}. ${PRODUCT_DESCRIPTION}`;
+  const title = `Write to ${first} · Hotly`;
+  const description = offer.description?.trim() || `Write to ${first}. ${PRODUCT_DESCRIPTION}`;
   return pageMetadata({
     title,
     description,
@@ -145,7 +139,7 @@ export function domeMetadata(
 ): Metadata {
   const name = firstName(offer?.display_name || "Creator");
   const prompt = promptContent?.trim();
-  const title = prompt ? `${prompt} — ${name}'s Dome · Hotly` : `${name}'s Dome · Hotly`;
+  const title = prompt ? `${prompt} · ${name}'s Dome · Hotly` : `${name}'s Dome · Hotly`;
   const description = prompt || `Join ${name}'s community on Hotly.`;
   return pageMetadata({
     title,

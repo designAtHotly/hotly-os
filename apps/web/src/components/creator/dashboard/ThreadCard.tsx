@@ -319,7 +319,7 @@ export function ThreadCard({
   isActive,
   onActivate,
   // onDeactivate, // TODO: Re-enable for follow-up messages feature
-  variant = "Penpal",
+  variant = "Weekly",
   chatAttachmentPolicy,
   pricing,
   onBlock,

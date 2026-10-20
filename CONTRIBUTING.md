@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for wanting to help. This is a **single-creator, self-hosted** Hotly. Scope is the frozen MVP: Penpal, Dome, operator-owned Stripe / Firebase / SendGrid, Apache License 2.0.
+Thanks for wanting to help. This is a **single-creator, self-hosted** Hotly. Scope is the frozen MVP: the paid inbox, Dome, operator-owned Stripe / Firebase / SendGrid, Apache License 2.0.
 
 Please read [`README.md`](README.md) and [`docs/operations.md`](docs/operations.md) first. Operators install with [`scripts/install.sh`](scripts/install.sh), not `bun run setup`. Security reports go to [`SECURITY.md`](SECURITY.md), not a public issue. After this tree is its own GitHub repo, maintainers enable the toggles in [`docs/github.md`](docs/github.md). Install or runtime bugs: paste the installer’s "System (paste this in a GitHub issue)" block (or a screenshot of it).
 

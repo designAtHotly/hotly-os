@@ -353,7 +353,7 @@ export default function CoffeePageImpl({
               `}
             >
               <h2 className="mb-4 text-sm font-semibold text-center tracking-wide uppercase text-gray-400">
-                Penpal chat with {firstName}
+                Write to {firstName}
               </h2>
 
               {/* Tier Grid */}
