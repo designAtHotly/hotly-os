@@ -1,12 +1,14 @@
 # Hotly open-source
 
-**A paid inbox for one creator, on your own server.** Fans pay to send a note or subscribe weekly. The creator replies from one inbox. Stripe pays the creator directly.
+**Premium conversations for one creator, on your own server.** Fans pay to send a note or subscribe weekly. The creator replies from one inbox. Stripe pays the creator directly.
 
 ![A fan pays to send a note, the creator replies from the inbox with a photo priced to unlock, and the fan unlocks it](docs/demo.gif)
 
 - **See it:** [hotly.com](https://hotly.com/?utm_source=github&utm_medium=readme&utm_campaign=os-launch)
 - **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
 - **Don't want a server?** [We host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) from $5.99/mo + 20%, 30 days free
+
+> **One creator, sixty days.** [Bailey Schildbach](https://hotly.com/schildba?utm_source=github&utm_medium=readme&utm_campaign=os-launch) (536K on Instagram) didn't run ads or find a new audience. She told the fans she already had, and banked **$22,400 in her first 60 days**: about half from 217 paying fans, the rest from brand deals. 921 conversations, one inbox. [Read Bailey's story](https://hotly.com/be-like-bailey?utm_source=github&utm_medium=readme&utm_campaign=os-launch)
 
 Maintained by the Hotly team, with a release about once a month. Releases are tagged; pin one.
 
