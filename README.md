@@ -34,7 +34,7 @@ Running it for real? The [production install](#production) pins a release tag on
 - **No prebuilt images yet.** It builds from source, which is why the box needs 4 GB.
 - **Maintained by the Hotly team.** Tagged releases about once a month; pin one. Go tests and type checks run in CI. Built by humans, assisted by AI.
 - **How this gets paid for.** We [host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) for people who don't want a server: from $5.99/mo and you keep 80%, 30 days free. Self-hosting stays free.
-- **Real payments, on the hosted version.** Fans paid [one creator](https://hotly.com/schildba?utm_source=github&utm_medium=readme&utm_campaign=os-launch) $12,248 across 1,012 payments on hosted Hotly, 10 January to 28 September 2026. This repo is the single-creator, self-hosted build of that product.
+- **A real creator, on the hosted version.** [Bailey Schildbach](https://hotly.com/schildba?utm_source=github&utm_medium=readme&utm_campaign=os-launch) banked $22,400 in her first 60 days on hosted Hotly, including brand deals. This repo is the single-creator, self-hosted build of that product.
 
 ## Prerequisites
 
