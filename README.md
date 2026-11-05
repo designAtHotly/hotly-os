@@ -1,18 +1,40 @@
-# Hotly open-source
+# Hotly
 
-**A paid inbox for one creator, on your own server.** Fans pay to send a note or subscribe weekly. The creator replies from one inbox. Stripe pays the creator directly.
+**Premium conversations for one creator, on your own server.** A self-hosted inbox where fans pay to send a note or subscribe weekly, and the creator replies with text, photos or video, free or paid to unlock. Payments go straight to your Stripe account, with no commission on top of Stripe's fees. Apache 2.0.
+
+Go · Next.js · PostgreSQL 18 · Caddy · Garage (S3) · Docker Compose
 
 ![A fan pays to send a note, the creator replies from the inbox with a photo priced to unlock, and the fan unlocks it](docs/demo.gif)
 
-- **See it:** [hotly.com](https://hotly.com/?utm_source=github&utm_medium=readme&utm_campaign=os-launch)
-- **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
-- **Don't want a server?** [We host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) from $5.99/mo + 20%, 30 days free
+## Try it locally
 
-Maintained by the Hotly team, with a release about once a month. Releases are tagged; pin one.
+Linux or macOS with Docker Engine, Compose v2, and at least 2 CPUs and 4 GB of RAM for Docker.
 
-Self-hosted Hotly for **exactly one creator**. Apache License 2.0. Guests buy a one-time note or a weekly Penpal subscription; the creator replies from an inbox, including optional image/video (free or paid unlock). `/dome` is the retained community. Payments go to the operator’s Stripe account.
+```bash
+git clone https://github.com/designAtHotly/hotly-os.git && cd hotly-os
+./scripts/install.sh --local --skip-firebase --skip-stripe --skip-sendgrid --yes
+```
 
-Browsers land on `/`. The public origin is Caddy (`/` + `/api`), not `:3000` or `:8080`.
+Open [http://localhost](http://localhost). It boots with no accounts. To add one, re-run `./scripts/install.sh --local` and paste the keys. Each one turns on a piece:
+
+| Add | What turns on |
+| --- | --- |
+| Nothing | Public creator page, with checkout off |
+| Stripe test keys, plus `stripe listen --forward-to localhost/api/webhooks/stripe` | Checkout, with card `4242 4242 4242 4242` |
+| Firebase | Google sign-in: the creator inbox at `/dashboard`, and members of the `/dome` community |
+| SendGrid | Email: reply and payment notices, guest sign-in recovery |
+
+Running it for real? The [production install](#production) pins a release tag on a 2 vCPU / 4 GB Linux VPS. [Read the installer](scripts/install.sh) first, it's one file.
+
+## Before you commit
+
+- **One creator per install, on purpose.** One Stripe account, one inbox, a simple data model. For several creators, run one install each.
+- **Your accounts, your data.** Postgres and media live in Docker volumes on your box, and fans pay your Stripe account directly. The running app has no telemetry or analytics. Email logos load from hotly.com.
+- **Three outside services.** Stripe, Firebase (Google sign-in only) and SendGrid (email only).
+- **No prebuilt images yet.** It builds from source, which is why the box needs 4 GB.
+- **Maintained by the Hotly team.** Tagged releases about once a month; pin one. Go tests and type checks run in CI. Built by humans, assisted by AI.
+- **How this gets paid for.** We [host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) for people who don't want a server: from $5.99/mo and you keep 80%, 30 days free. Self-hosting stays free.
+- **Real payments, on the hosted version.** Fans paid [one creator](https://hotly.com/schildba?utm_source=github&utm_medium=readme&utm_campaign=os-launch) $12,248 across 1,012 payments on hosted Hotly, 10 January to 28 September 2026. This repo is the single-creator, self-hosted build of that product.
 
 ## Prerequisites
 
@@ -66,13 +88,9 @@ Idle Compose is a few hundred MiB. On a 4 GB Ubuntu host, `docker compose up --b
 
 Disk needs room for the OS, images, PostgreSQL, and media. Media growth is the long-term limit, not RAM. Measured breakdown: [`docs/operations.md`](docs/operations.md#host-size).
 
-## Run it locally
+## Local install details
 
-Linux or macOS with Docker Engine and Compose v2. Installer (fail-fast if Docker is missing; does not install Docker or Bun):
-
-```bash
-./scripts/install.sh --local
-```
+On its own, `./scripts/install.sh --local` prompts for each provider. It fails fast if Docker is missing and does not install Docker or Bun.
 
 Skip providers or Compose while testing: `--skip-firebase --skip-stripe --skip-sendgrid --skip-up --yes`. Below 2 vCPU / 4 GB Docker RAM the installer stops; `--skip-spec` overrides that. The "System (paste this in a GitHub issue)" block is for bug reports.
 
@@ -85,7 +103,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open [http://localhost](http://localhost). Health: `GET /api/health`.
+Open [http://localhost](http://localhost). Health: `GET /api/health`. Browsers land on `/`. The public origin is Caddy (`/` + `/api`), not `:3000` or `:8080`.
 
 Compose starts PostgreSQL 18, runs `db/migrations` before the API, then the Go API, Next.js, Garage (private S3), and Caddy.
 
