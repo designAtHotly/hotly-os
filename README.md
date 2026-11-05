@@ -6,6 +6,10 @@ Go · Next.js · PostgreSQL 18 · Caddy · Garage (S3) · Docker Compose
 
 ![A fan pays to send a note, the creator replies from the inbox with a photo priced to unlock, and the fan unlocks it](docs/demo.gif)
 
+- **See it:** [hotly.com](https://hotly.com/?utm_source=github&utm_medium=readme&utm_campaign=os-launch)
+- **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
+- **Don't want a server?** [We host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) from $5.99/mo + 20%, 30 days free
+
 ## Try it locally
 
 Linux or macOS with Docker Engine, Compose v2, and at least 2 CPUs and 4 GB of RAM for Docker.
@@ -24,7 +28,7 @@ Open [http://localhost](http://localhost). It boots with no accounts. To add one
 | Firebase | Google sign-in: the creator inbox at `/dashboard`, and members of the `/dome` community |
 | SendGrid | Email: reply and payment notices, guest sign-in recovery |
 
-Running it for real? The [production install](#production) pins a release tag on a 2 vCPU / 4 GB Linux VPS. [Read the installer](scripts/install.sh) first, it's one file.
+Running it for real? The [production install](#production) pins a release tag. [Read the installer](scripts/install.sh) first, it's one file.
 
 ## Before you commit
 
@@ -33,7 +37,7 @@ Running it for real? The [production install](#production) pins a release tag on
 - **Three outside services.** Stripe, Firebase (Google sign-in only) and SendGrid (email only).
 - **No prebuilt images yet.** It builds from source, which is why the box needs 4 GB.
 - **Maintained by the Hotly team.** Tagged releases about once a month; pin one. Go tests and type checks run in CI. Built by humans, assisted by AI.
-- **How this gets paid for.** We [host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) for people who don't want a server: from $5.99/mo and you keep 80%, 30 days free. Self-hosting stays free.
+- **How this gets paid for.** [Hosted Hotly](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) pays for maintenance. Self-hosting stays free.
 - **A real creator, on the hosted version.** [Bailey Schildbach](https://hotly.com/schildba?utm_source=github&utm_medium=readme&utm_campaign=os-launch) banked $22,400 in her first 60 days on hosted Hotly, including brand deals. This repo is the single-creator, self-hosted build of that product.
 
 ## Prerequisites
