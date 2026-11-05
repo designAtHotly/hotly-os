@@ -8,7 +8,7 @@ Go · Next.js · PostgreSQL 18 · Caddy · Garage (S3) · Docker Compose
 - **Run it:** [production install](#production) on a 2 vCPU / 4 GB Linux VPS
 - **Don't want a server?** [We host it](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) from $5.99/mo + 20%, 30 days free
 
-![A fan pays to send a note, the creator replies from the inbox with a photo priced to unlock, and the fan unlocks it](docs/demo.gif)
+![A fan pays to send a note, the creator replies from the inbox with a photo priced to unlock, and the fan unlocks it](https://raw.githubusercontent.com/designAtHotly/hotly-os/main/docs/demo.gif)
 
 ## Try it locally
 
