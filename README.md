@@ -169,3 +169,5 @@ Apache License 2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 - [`SECURITY.md`](SECURITY.md) — private vulnerability reports, not public issues
 - [`SUPPORT.md`](SUPPORT.md) — operations vs GitHub vs provider consoles
 - [`docs/github.md`](docs/github.md) — enable Private vulnerability reporting and Dependabot on this GitHub repository
+
+<a href="https://www.opensourcealternatives.to"><img src="https://www.opensourcealternatives.to/badge-osa.svg" alt="As seen on Open Source Alternatives" height="20"></a>
