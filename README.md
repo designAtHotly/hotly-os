@@ -40,6 +40,19 @@ Running it for real? The [production install](#production) pins a release tag. [
 - **How this gets paid for.** [Hosted Hotly](https://hotly.com/pricing?utm_source=github&utm_medium=readme&utm_campaign=os-launch) pays for maintenance. Self-hosting stays free.
 - **A real creator, on the hosted version.** [Bailey Schildbach](https://hotly.com/schildba?utm_source=github&utm_medium=readme&utm_campaign=os-launch) banked $22,400 in her first 60 days on hosted Hotly, including brand deals. This repo is the single-creator, self-hosted build of that product.
 
+## Paid questions for maintainers and experts
+
+Getting help requests in your DMs, email and issues? Send people to your inbox instead. They pick a note size, pay, and ask their question, and you reply when it suits you. Default prices run from $5 for 250 characters to $15 for 1,000 (`ONE_TIME_PRICE_CENTS` and the two lines after it in `.env`).
+
+Point people to it from your project:
+
+- In your README: `Paid questions: https://your.domain.example`
+- In `.github/FUNDING.yml`, so it shows under your repo's Sponsor button:
+
+  ```yaml
+  custom: ["https://your.domain.example"]
+  ```
+
 ## Prerequisites
 
 You supply the machine, DNS, and accounts. This project does not create a VPS, a domain, Docker, or Firebase / Stripe / SendGrid. Operators **build images from source**. There are no published prebuilt images.
