@@ -1,5 +1,7 @@
 # Hotly
 
+[![As seen on Open Source Alternatives](https://www.opensourcealternatives.to/badge-osa.svg)](https://www.opensourcealternatives.to)
+
 **Premium conversations for one creator, on your own server.** A self-hosted inbox where fans pay to send a note or subscribe weekly, and the creator replies with text, photos or video, free or paid to unlock. Payments go straight to your Stripe account, with no commission on top of Stripe's fees. Apache 2.0.
 
 Go · Next.js · PostgreSQL 18 · Caddy · Garage (S3) · Docker Compose
