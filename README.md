@@ -1,7 +1,5 @@
 # Hotly
 
-[![As seen on Open Source Alternatives](https://www.opensourcealternatives.to/badge-osa.svg)](https://www.opensourcealternatives.to)
-
 **Premium conversations for one creator, on your own server.** A self-hosted inbox where fans pay to send a note or subscribe weekly, and the creator replies with text, photos or video, free or paid to unlock. Payments go straight to your Stripe account, with no commission on top of Stripe's fees. Apache 2.0.
 
 Go · Next.js · PostgreSQL 18 · Caddy · Garage (S3) · Docker Compose
@@ -171,3 +169,5 @@ Apache License 2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 - [`SECURITY.md`](SECURITY.md) — private vulnerability reports, not public issues
 - [`SUPPORT.md`](SUPPORT.md) — operations vs GitHub vs provider consoles
 - [`docs/github.md`](docs/github.md) — enable Private vulnerability reporting and Dependabot on this GitHub repository
+
+<a href="https://www.opensourcealternatives.to"><img src="https://www.opensourcealternatives.to/badge-osa.svg" alt="As seen on Open Source Alternatives" height="14"></a>
